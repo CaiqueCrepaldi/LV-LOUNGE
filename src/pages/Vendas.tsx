@@ -1,22 +1,9 @@
 import { useState } from 'react';
-import { Plus, X, ShoppingCart, CheckCircle } from 'lucide-react';
+import { Plus, X, ShoppingCart, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import type { ItemComanda, TipoImposto } from '../types';
-
-const CARDAPIO = [
-  { emoji: '🍟', nome: 'Batata Frita', preco: 28 },
-  { emoji: '🍗', nome: 'Porção Frango', preco: 42 },
-  { emoji: '🐟', nome: 'Porção Tilápia', preco: 55 },
-  { emoji: '🥤', nome: 'Coca-Cola', preco: 12 },
-  { emoji: '🥃', nome: 'Whisky', preco: 180 },
-  { emoji: '🍸', nome: 'Gin', preco: 160 },
-  { emoji: '🍸', nome: 'Vodka', preco: 140 },
-  { emoji: '🐂', nome: 'Redbull', preco: 22 },
-  { emoji: '🍾', nome: 'Ballena', preco: 150 },
-  { emoji: '🕯️', nome: 'Velas Combo', preco: 35 },
-];
 
 let itemIdCounter = 100;
 
@@ -28,8 +15,15 @@ const impostoLabel: Record<TipoImposto, string> = {
   iss_5: 'ISS 5%', icms_12: 'ICMS 12%', isento: 'Isento',
 };
 
+const categoriaEmoji: Record<string, string> = {
+  bebida: '🥤', alimento: '🍽️', descartavel: '📦',
+};
+
+const mapImpostoTipo = (imp: number): TipoImposto =>
+  imp === 5 ? 'iss_5' : imp === 12 ? 'icms_12' : 'isento';
+
 export default function Vendas() {
-  const { setVendas } = useApp();
+  const { setVendas, produtos } = useApp();
   const { user } = useAuth();
   const toast = useToast();
   const [itens, setItens] = useState<ItemComanda[]>([]);
@@ -40,19 +34,22 @@ export default function Vendas() {
   const [comandaNum, setComanadaNum] = useState(novaComanda);
   const [mostrarResumo, setMostrarResumo] = useState(false);
 
-  const addItem = (nome?: string, precoVal?: number) => {
+  const produtosDisponiveis = produtos.filter(p => p.estoqueAtual > 0);
+
+  const addItem = (nome?: string, precoVal?: number, produtoId?: string, impostoOverride?: TipoImposto) => {
     const desc = nome ?? descricao;
     const val = precoVal ?? parseFloat(preco.replace(',', '.'));
+    const imp = impostoOverride ?? imposto;
     if (!desc || isNaN(val)) return;
     const subtotal = val * quantidade;
-    const total = subtotal * (1 + TAX_RATE[imposto]);
+    const total = subtotal * (1 + TAX_RATE[imp]);
     setItens(prev => [...prev, {
       id: String(++itemIdCounter),
-      produtoId: '0',
+      produtoId: produtoId ?? '0',
       descricao: desc,
       quantidade,
       precoUnitario: val,
-      imposto,
+      imposto: imp,
       total,
     }]);
     setDescricao(''); setPreco(''); setQuantidade(1);
@@ -90,24 +87,36 @@ export default function Vendas() {
       </div>
 
       <div className="comanda-layout">
-        {/* Cardápio rápido */}
+        {/* Produtos do estoque */}
         <div>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 13, marginBottom: 10, color: 'var(--text)' }}>
-            Cardápio Rápido
+            Produtos em Estoque
           </div>
-          <div className="cardapio-grid">
-            {CARDAPIO.map(item => (
-              <div
-                key={item.nome}
-                className="cardapio-item"
-                onClick={() => addItem(item.nome, item.preco)}
-              >
-                <span className="cardapio-emoji">{item.emoji}</span>
-                {item.nome}
-                <div className="cardapio-price">R${item.preco.toFixed(2)}</div>
-              </div>
-            ))}
-          </div>
+          {produtosDisponiveis.length === 0 ? (
+            <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
+              Nenhum produto disponível no estoque.
+            </div>
+          ) : (
+            <div className="cardapio-grid">
+              {produtosDisponiveis.map(p => (
+                <div
+                  key={p.id}
+                  className="cardapio-item"
+                  onClick={() => addItem(p.nome, p.preco, p.id, mapImpostoTipo(p.imposto))}
+                  title={`Estoque: ${p.estoqueAtual} un`}
+                >
+                  <span className="cardapio-emoji">{categoriaEmoji[p.categoria] ?? '📦'}</span>
+                  {p.nome}
+                  <div className="cardapio-price">R${p.preco.toFixed(2)}</div>
+                  {p.status !== 'normal' && (
+                    <div style={{ fontSize: 9, marginTop: 2, color: p.status === 'critico' ? 'var(--red)' : 'var(--amber)', display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'center' }}>
+                      <AlertTriangle size={9} /> {p.estoqueAtual} un
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Comanda */}
@@ -206,8 +215,11 @@ export default function Vendas() {
           ) : (
             /* Tela de resumo antes de confirmar fechamento */
             <div>
-              <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 12, color: 'var(--text)' }}>
+              <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: 'var(--text)' }}>
                 Resumo da Comanda #{comandaNum}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
+                Funcionário: <strong style={{ color: 'var(--text)' }}>{user?.nome}</strong>
               </div>
               <table className="data-table" style={{ marginBottom: 14 }}>
                 <thead>

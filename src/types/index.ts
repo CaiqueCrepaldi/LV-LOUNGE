@@ -1,5 +1,6 @@
 // ─── Usuário / Auth ───────────────────────────────────────────────
 export type UserRole = 'gerente' | 'barman' | 'garcom' | 'cozinheiro';
+export type Turno = 'tarde' | 'noite' | 'madrugada';
 
 export interface User {
   id: string;
@@ -9,6 +10,7 @@ export interface User {
   cpf: string;
   email: string;
   cargo: UserRole;
+  turno?: Turno;
   salario: number;
   senha: string;
   ativo: boolean;

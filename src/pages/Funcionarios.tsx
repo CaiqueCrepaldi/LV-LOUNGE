@@ -4,13 +4,20 @@ import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
-import type { User, UserRole } from '../types';
+import type { User, UserRole, Turno } from '../types';
 
 const cargoLabels: Record<UserRole, string> = {
   gerente: 'Gerente', barman: 'Barman', garcom: 'Garçom', cozinheiro: 'Cozinheiro',
 };
 const cargoBadge: Record<UserRole, string> = {
   gerente: 'badge-blue', barman: 'badge-amber', garcom: 'badge-gray', cozinheiro: 'badge-green',
+};
+
+const turnoLabels: Record<Turno, string> = {
+  tarde: 'Tarde (12h–18h)', noite: 'Noite (18h–00h)', madrugada: 'Madrugada (00h–06h)',
+};
+const turnoBadge: Record<Turno, string> = {
+  tarde: 'badge-amber', noite: 'badge-blue', madrugada: 'badge-gray',
 };
 
 // ── Máscaras ──────────────────────────────────────────────────────
@@ -40,7 +47,7 @@ const formatSalario = (v: string) => {
 const parseSalario = (v: string) =>
   parseFloat(v.replace(/\./g, '').replace(',', '.')) || 0;
 
-const initForm = { nome: '', usuario: '', telefone: '', cpf: '', email: '', cargo: 'barman' as UserRole, salario: '', senha: '' };
+const initForm = { nome: '', usuario: '', telefone: '', cpf: '', email: '', cargo: 'barman' as UserRole, turno: 'noite' as Turno, salario: '', senha: '' };
 
 export default function Funcionarios() {
   const { funcionarios, setFuncionarios } = useApp();
@@ -82,6 +89,7 @@ export default function Funcionarios() {
       cpf: f.cpf,
       email: f.email,
       cargo: f.cargo,
+      turno: f.turno ?? 'noite',
       salario: f.salario.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       senha: '',
     });
@@ -179,6 +187,14 @@ export default function Funcionarios() {
               <option value="gerente">Gerente</option>
             </select>
           </div>
+          <div className="form-group">
+            <div className="form-label">Turno</div>
+            <select className="form-control" value={form.turno} onChange={e => change('turno', e.target.value)}>
+              <option value="tarde">Tarde (12:00–18:00)</option>
+              <option value="noite">Noite (18:00–00:00)</option>
+              <option value="madrugada">Madrugada (00:00–06:00)</option>
+            </select>
+          </div>
         </div>
         <div className="form-row form-row-3">
           <div className="form-group">
@@ -228,7 +244,7 @@ export default function Funcionarios() {
         <div className="table-wrap">
           <table className="data-table">
             <thead>
-              <tr><th>Funcionário</th><th>Usuário</th><th>Telefone</th><th>CPF</th><th>E-mail</th><th>Cargo</th><th>Salário</th><th>Ações</th></tr>
+              <tr><th>Funcionário</th><th>Usuário</th><th>Telefone</th><th>CPF</th><th>E-mail</th><th>Cargo</th><th>Turno</th><th>Salário</th><th>Ações</th></tr>
             </thead>
             <tbody>
               {filtered.map(f => (
@@ -245,6 +261,7 @@ export default function Funcionarios() {
                   <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{f.cpf}</td>
                   <td style={{ fontSize: 11 }}>{f.email}</td>
                   <td><span className={`badge ${cargoBadge[f.cargo]}`}>{cargoLabels[f.cargo]}</span></td>
+                  <td>{f.turno ? <span className={`badge ${turnoBadge[f.turno]}`}>{turnoLabels[f.turno]}</span> : <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>}</td>
                   <td style={{ fontWeight: 500 }}>R$ {f.salario.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                   <td>
                     <div className="td-actions">
@@ -255,7 +272,7 @@ export default function Funcionarios() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>Nenhum funcionário encontrado</td></tr>
+                <tr><td colSpan={9} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>Nenhum funcionário encontrado</td></tr>
               )}
             </tbody>
           </table>

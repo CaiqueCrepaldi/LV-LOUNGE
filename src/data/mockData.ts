@@ -7,22 +7,22 @@ import type {
 export const mockUsers: User[] = [
   {
     id: '1', usuario: 'bianca.gerente', nome: 'Bianca Almeida', telefone: '(11) 99999-0001',
-    cpf: '000.000.000-01', email: 'bianca@lvlounge.com', cargo: 'gerente',
+    cpf: '000.000.000-01', email: 'bianca@lvlounge.com', cargo: 'gerente', turno: 'tarde',
     salario: 5000, senha: '12345678', ativo: true,
   },
   {
     id: '2', usuario: 'roberto', nome: 'Roberto Silva', telefone: '11931464662',
-    cpf: '000.000.000-00', email: 'rob@gmail.com', cargo: 'barman',
+    cpf: '000.000.000-00', email: 'rob@gmail.com', cargo: 'barman', turno: 'noite',
     salario: 1900, senha: '12345678', ativo: true,
   },
   {
     id: '3', usuario: 'maria', nome: 'Maria Santos', telefone: '11987654321',
-    cpf: '111.111.111-11', email: 'maria@gmail.com', cargo: 'garcom',
+    cpf: '111.111.111-11', email: 'maria@gmail.com', cargo: 'garcom', turno: 'noite',
     salario: 1700, senha: '12345678', ativo: true,
   },
   {
     id: '4', usuario: 'ana', nome: 'Ana Oliveira', telefone: '11976543210',
-    cpf: '222.222.222-22', email: 'ana@gmail.com', cargo: 'cozinheiro',
+    cpf: '222.222.222-22', email: 'ana@gmail.com', cargo: 'cozinheiro', turno: 'tarde',
     salario: 2100, senha: '12345678', ativo: true,
   },
 ];

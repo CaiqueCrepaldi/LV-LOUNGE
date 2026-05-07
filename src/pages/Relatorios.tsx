@@ -1,12 +1,34 @@
 import { useState } from 'react';
-import { BarChart2, TrendingUp } from 'lucide-react';
+import { BarChart2, TrendingUp, Users } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import type { Turno, UserRole } from '../types';
 
-type TabType = 'diario' | 'semanal';
+type TabType = 'diario' | 'semanal' | 'funcionarios';
+
+const cargoLabels: Record<UserRole, string> = {
+  gerente: 'Gerente', barman: 'Barman', garcom: 'Garçom', cozinheiro: 'Cozinheiro',
+};
+const turnoLabels: Record<Turno, string> = {
+  tarde: 'Tarde (12h–18h)', noite: 'Noite (18h–00h)', madrugada: 'Madrugada (00h–06h)',
+};
+const turnoBadge: Record<Turno, string> = {
+  tarde: 'badge-amber', noite: 'badge-blue', madrugada: 'badge-gray',
+};
 
 export default function Relatorios() {
-  const { vendasDiarias, vendasSemanais } = useApp();
+  const { vendasDiarias, vendasSemanais, vendas, funcionarios } = useApp();
   const [tab, setTab] = useState<TabType>('diario');
+
+  const vendorStats = Object.values(
+    vendas.reduce((acc, v) => {
+      const key = v.funcionarioId;
+      if (!acc[key]) acc[key] = { funcionarioId: key, nome: v.funcionarioNome, comandas: 0, total: 0, itens: 0 };
+      acc[key].comandas += 1;
+      acc[key].total += v.total;
+      acc[key].itens += v.itens.reduce((s, i) => s + i.quantidade, 0);
+      return acc;
+    }, {} as Record<string, { funcionarioId: string; nome: string; comandas: number; total: number; itens: number }>)
+  ).sort((a, b) => b.total - a.total);
 
   const maxDiario = Math.max(...vendasDiarias.map(d => d.quantidade));
   const maxSemanal = Math.max(...vendasSemanais.map(d => d.lucro));
@@ -26,6 +48,9 @@ export default function Relatorios() {
         </div>
         <div className={`tab${tab === 'semanal' ? ' active' : ''}`} onClick={() => setTab('semanal')}>
           Relatório Semanal
+        </div>
+        <div className={`tab${tab === 'funcionarios' ? ' active' : ''}`} onClick={() => setTab('funcionarios')}>
+          Por Funcionário
         </div>
       </div>
 
@@ -192,6 +217,94 @@ export default function Relatorios() {
                       </tr>
                     );
                   })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === 'funcionarios' && (
+        <div>
+          <div className="grid-2">
+            <div className="card">
+              <div className="card-title">
+                <span><Users size={14} style={{ display: 'inline', marginRight: 6 }} />Ranking de vendas</span>
+              </div>
+              <div className="bar-chart" style={{ height: 120 }}>
+                {vendorStats.map((v, i) => {
+                  const max = vendorStats[0]?.total || 1;
+                  const h = Math.max(8, (v.total / max) * 100);
+                  return (
+                    <div className="bar-group" key={v.funcionarioId}>
+                      <div
+                        className={`bar ${i === 0 ? 'bar-peak' : i < 3 ? 'bar-primary' : 'bar-pale'}`}
+                        style={{ height: `${h}%` }}
+                        title={`${v.nome}: R$${v.total.toFixed(2)}`}
+                      />
+                      <span className="bar-label" style={{ fontSize: 8 }}>
+                        {v.nome.split(' ')[0]}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              {vendorStats.length === 0 && (
+                <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 12, padding: '16px 0' }}>
+                  Nenhuma venda registrada ainda.
+                </div>
+              )}
+            </div>
+
+            <div className="card">
+              <div className="card-title">Resumo geral</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  Total de comandas fechadas: <strong style={{ color: 'var(--text)' }}>{vendas.filter(v => v.status === 'fechada').length}</strong>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  Faturamento total registrado: <strong style={{ color: 'var(--text)' }}>R${vendas.reduce((s, v) => s + v.total, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  Funcionários com vendas: <strong style={{ color: 'var(--text)' }}>{vendorStats.length}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-title">Vendas por funcionário</div>
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr><th>#</th><th>Funcionário</th><th>Cargo</th><th>Turno</th><th>Comandas</th><th>Itens vendidos</th><th>Total vendido</th></tr>
+                </thead>
+                <tbody>
+                  {vendorStats.map((v, i) => {
+                    const func = funcionarios.find(f => f.id === v.funcionarioId);
+                    return (
+                      <tr key={v.funcionarioId}>
+                        <td style={{ fontWeight: 700, color: i === 0 ? 'var(--amber)' : 'var(--text-muted)', fontSize: 12 }}>
+                          {i === 0 ? '🏆' : `#${i + 1}`}
+                        </td>
+                        <td style={{ fontWeight: 500 }}>{v.nome}</td>
+                        <td>
+                          {func ? <span className="badge badge-blue">{cargoLabels[func.cargo]}</span> : <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>}
+                        </td>
+                        <td>
+                          {func?.turno
+                            ? <span className={`badge ${turnoBadge[func.turno]}`}>{turnoLabels[func.turno]}</span>
+                            : <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>}
+                        </td>
+                        <td>{v.comandas}</td>
+                        <td>{v.itens} un</td>
+                        <td style={{ fontWeight: 600 }}>R${v.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                    );
+                  })}
+                  {vendorStats.length === 0 && (
+                    <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '32px 0' }}>Nenhuma venda registrada</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
