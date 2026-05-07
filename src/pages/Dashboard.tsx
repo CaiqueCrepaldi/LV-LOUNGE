@@ -1,10 +1,9 @@
 import { TrendingUp, Package, AlertTriangle, Users } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
-import { mockVendasSemanais } from '../data/mockData';
 
 export default function Dashboard() {
-  const { produtos, movimentacoes, notificacoes, funcionarios } = useApp();
+  const { produtos, movimentacoes, notificacoes, funcionarios, vendasSemanais } = useApp();
   const { user } = useAuth();
 
   const naoLidas = notificacoes.filter(n => !n.lida).length;
@@ -16,7 +15,7 @@ export default function Dashboard() {
   const nomeHora = hoje.getHours() < 12 ? 'Bom dia' : hoje.getHours() < 18 ? 'Boa tarde' : 'Boa noite';
   const dataFormatada = hoje.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 
-  const maxLucro = Math.max(...mockVendasSemanais.map(d => d.lucro));
+  const maxLucro = Math.max(...vendasSemanais.map(d => d.lucro));
 
   const statusColors: Record<string, string> = {
     ok: 'badge-green', verificar: 'badge-amber', erro: 'badge-red',
@@ -64,7 +63,7 @@ export default function Dashboard() {
         <div className="card">
           <div className="card-title">Vendas da semana</div>
           <div className="bar-chart">
-            {mockVendasSemanais.map((d, i) => {
+            {vendasSemanais.map((d, i) => {
               const height = Math.max(10, (d.lucro / maxLucro) * 100);
               const isPeak = d.lucro === maxLucro;
               return (
@@ -80,7 +79,7 @@ export default function Dashboard() {
             })}
           </div>
           <div className="flex justify-between" style={{ marginTop: 10, fontSize: 10, color: 'var(--text-muted)' }}>
-            <span>Total semana: R${mockVendasSemanais.reduce((s, d) => s + d.lucro, 0).toLocaleString()}</span>
+            <span>Total semana: R${vendasSemanais.reduce((s, d) => s + d.lucro, 0).toLocaleString()}</span>
             <span>Top: Ballena</span>
           </div>
         </div>

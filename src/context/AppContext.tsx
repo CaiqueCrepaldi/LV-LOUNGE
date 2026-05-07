@@ -2,10 +2,12 @@ import React, { createContext, useContext, useState } from 'react';
 import type {
   Produto, Fornecedor, ItemGeladeira, Venda,
   User, Movimentacao, Notificacao, PageId,
+  DadoVendaDiaria, DadoVendaSemanal,
 } from '../types';
 import {
   mockProdutos, mockFornecedores, mockGeladeira,
   mockVendas, mockUsers, mockMovimentacoes, mockNotificacoes,
+  mockVendasDiarias, mockVendasSemanais,
 } from '../data/mockData';
 
 interface AppContextType {
@@ -25,6 +27,10 @@ interface AppContextType {
   setMovimentacoes: React.Dispatch<React.SetStateAction<Movimentacao[]>>;
   notificacoes: Notificacao[];
   setNotificacoes: React.Dispatch<React.SetStateAction<Notificacao[]>>;
+  vendasDiarias: DadoVendaDiaria[];
+  setVendasDiarias: React.Dispatch<React.SetStateAction<DadoVendaDiaria[]>>;
+  vendasSemanais: DadoVendaSemanal[];
+  setVendasSemanais: React.Dispatch<React.SetStateAction<DadoVendaSemanal[]>>;
   notificacoesNaoLidas: number;
 }
 
@@ -39,6 +45,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [funcionarios, setFuncionarios] = useState<User[]>(mockUsers);
   const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>(mockMovimentacoes);
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>(mockNotificacoes);
+  const [vendasDiarias, setVendasDiarias] = useState<DadoVendaDiaria[]>(mockVendasDiarias);
+  const [vendasSemanais, setVendasSemanais] = useState<DadoVendaSemanal[]>(mockVendasSemanais);
 
   const notificacoesNaoLidas = notificacoes.filter(n => !n.lida).length;
 
@@ -52,6 +60,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       funcionarios, setFuncionarios,
       movimentacoes, setMovimentacoes,
       notificacoes, setNotificacoes,
+      vendasDiarias, setVendasDiarias,
+      vendasSemanais, setVendasSemanais,
       notificacoesNaoLidas,
     }}>
       {children}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus, Edit2, Trash2, Search } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useConfirm } from '../components/ConfirmModal';
 import type { Produto, TipoProduto, CategoriaProduto, VidaUtil, StatusEstoque } from '../types';
 
 const statusBadge: Record<StatusEstoque, string> = {
@@ -21,22 +22,28 @@ const initForm = {
   vidaUtil: 'nao_perecivel' as VidaUtil,
 };
 
+const calcStatus = (atual: number, minimo: number): StatusEstoque => {
+  if (atual <= minimo) return 'critico';
+  if (atual <= minimo * 1.1) return 'atencao';
+  return 'normal';
+};
+
 export default function Produtos() {
   const { produtos, setProdutos } = useApp();
+  const { confirm, modal } = useConfirm();
   const [form, setForm] = useState(initForm);
+  const [formError, setFormError] = useState('');
   const [busca, setBusca] = useState('');
   const [editandoId, setEditandoId] = useState<string | null>(null);
 
   const change = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
-  const calcStatus = (atual: number, minimo: number): StatusEstoque => {
-    if (atual <= minimo) return 'critico';
-    if (atual <= minimo * 1.1) return 'atencao';
-    return 'normal';
-  };
-
   const handleSubmit = () => {
-    if (!form.nome || !form.codigo) { alert('Nome e Código são obrigatórios.'); return; }
+    if (!form.nome || !form.codigo) {
+      setFormError('Nome e Código são obrigatórios.');
+      return;
+    }
+    setFormError('');
     const estoqueAtual = Number(form.estoqueInicial) || 0;
     const estoqueMinimo = Number(form.estoqueMinimo) || 60;
     if (editandoId) {
@@ -63,6 +70,7 @@ export default function Produtos() {
   };
 
   const handleEdit = (p: Produto) => {
+    setFormError('');
     setForm({
       tipo: p.tipo, categoria: p.categoria, marca: p.marca, nome: p.nome,
       estoqueInicial: String(p.estoqueAtual), estoqueMinimo: String(p.estoqueMinimo),
@@ -73,8 +81,9 @@ export default function Produtos() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Excluir este produto?')) setProdutos(prev => prev.filter(p => p.id !== id));
+  const handleDelete = async (id: string) => {
+    const ok = await confirm('Excluir este produto permanentemente?');
+    if (ok) setProdutos(prev => prev.filter(p => p.id !== id));
   };
 
   const filtered = produtos.filter(p =>
@@ -85,6 +94,7 @@ export default function Produtos() {
 
   return (
     <div>
+      {modal}
       <div className="page-header">
         <div className="page-title">Cadastro de Produtos</div>
         <div className="page-subtitle">Gerencie todos os produtos da LV Lounge</div>
@@ -152,12 +162,13 @@ export default function Produtos() {
             </select>
           </div>
         </div>
+        {formError && <div className="form-error">{formError}</div>}
         <div className="form-actions">
           <button className="btn btn-primary btn-sm" onClick={handleSubmit}>
             <Plus size={13} /> {editandoId ? 'Salvar alterações' : 'Cadastrar produto'}
           </button>
           {editandoId && (
-            <button className="btn btn-ghost btn-sm" onClick={() => { setEditandoId(null); setForm(initForm); }}>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setEditandoId(null); setForm(initForm); setFormError(''); }}>
               Cancelar
             </button>
           )}
@@ -203,6 +214,9 @@ export default function Produtos() {
                   </td>
                 </tr>
               ))}
+              {filtered.length === 0 && (
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>Nenhum produto encontrado</td></tr>
+              )}
             </tbody>
           </table>
         </div>

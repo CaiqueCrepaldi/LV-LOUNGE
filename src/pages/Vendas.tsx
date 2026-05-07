@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus, X, ShoppingCart } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useToast } from '../components/Toast';
 import type { ItemComanda, TipoImposto } from '../types';
 
 const CARDAPIO = [
@@ -18,20 +19,22 @@ const CARDAPIO = [
 
 let itemIdCounter = 100;
 
+const novaComanda = () => String(Math.floor(Math.random() * 900) + 100);
+
 export default function Vendas() {
-  const { vendas, setVendas } = useApp();
+  const { setVendas } = useApp();
+  const toast = useToast();
   const [itens, setItens] = useState<ItemComanda[]>([]);
   const [descricao, setDescricao] = useState('');
   const [preco, setPreco] = useState('');
   const [quantidade, setQuantidade] = useState(1);
   const [imposto, setImposto] = useState<TipoImposto>('isento');
-  const [comandaNum, setComanadaNum] = useState(String(Math.floor(Math.random() * 900) + 100));
+  const [comandaNum, setComanadaNum] = useState(novaComanda);
 
   const addItem = (nome?: string, precoVal?: number) => {
     const desc = nome ?? descricao;
     const val = precoVal ?? parseFloat(preco.replace(',', '.'));
     if (!desc || isNaN(val)) return;
-    const total = val * quantidade;
     setItens(prev => [...prev, {
       id: String(++itemIdCounter),
       produtoId: '0',
@@ -39,7 +42,7 @@ export default function Vendas() {
       quantidade,
       precoUnitario: val,
       imposto,
-      total,
+      total: val * quantidade,
     }]);
     setDescricao(''); setPreco(''); setQuantidade(1);
   };
@@ -50,9 +53,20 @@ export default function Vendas() {
 
   const fecharComanda = () => {
     if (itens.length === 0) return;
-    alert(`Comanda #${comandaNum} fechada! Total: R$${totalComanda.toFixed(2)}`);
+    setVendas(prev => [...prev, {
+      id: String(Date.now()),
+      comanda: comandaNum,
+      funcionarioId: '',
+      funcionarioNome: '',
+      itens,
+      total: totalComanda,
+      data: new Date().toISOString().slice(0, 10),
+      horario: new Date().toTimeString().slice(0, 5),
+      status: 'fechada',
+    }]);
+    toast(`Comanda #${comandaNum} fechada — R$${totalComanda.toFixed(2)}`);
     setItens([]);
-    setComanadaNum(String(Math.floor(Math.random() * 900) + 100));
+    setComanadaNum(novaComanda());
   };
 
   const impostoLabel: Record<TipoImposto, string> = {

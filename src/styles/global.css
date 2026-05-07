@@ -620,6 +620,87 @@ select.form-control { cursor: pointer; }
 .bar-pale { background: var(--blue-pale); }
 .bar-peak { background: var(--blue-dark); }
 
+/* ── Toast ── */
+.toast-container {
+  position: fixed;
+  bottom: 22px;
+  right: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  box-shadow: var(--shadow-lg);
+  animation: toast-in 0.2s ease;
+  min-width: 220px;
+  max-width: 360px;
+}
+
+.toast-icon { font-size: 12px; flex-shrink: 0; }
+.toast-success { background: var(--green-bg); color: var(--green-text); border: 1px solid var(--green); }
+.toast-error   { background: var(--red-bg);   color: var(--red-text);   border: 1px solid var(--red); }
+.toast-warning { background: var(--amber-bg); color: var(--amber-text); border: 1px solid var(--amber); }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── Confirm Modal ── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 42, 69, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fade-in 0.15s ease;
+}
+
+.modal-box {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 26px 24px 20px;
+  min-width: 300px;
+  max-width: 420px;
+  box-shadow: var(--shadow-lg);
+  animation: scale-in 0.15s ease;
+}
+
+.modal-message {
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 22px;
+  line-height: 1.5;
+}
+
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+@keyframes fade-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scale-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+
+/* ── Form error inline ── */
+.form-error {
+  padding: 7px 12px;
+  background: var(--red-bg);
+  color: var(--red-text);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
 /* ── Misc ── */
 .divider { height: 1px; background: var(--border); margin: 14px 0; }
 .text-muted { color: var(--text-muted); }

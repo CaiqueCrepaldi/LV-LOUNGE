@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Search, Plus, Edit2, Trash2, Filter } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useConfirm } from '../components/ConfirmModal';
 import type { StatusEstoque } from '../types';
 
 const statusLabel: Record<StatusEstoque, string> = {
@@ -11,7 +12,8 @@ const statusBadge: Record<StatusEstoque, string> = {
 };
 
 export default function Estoque() {
-  const { produtos, setProdutos, movimentacoes } = useApp();
+  const { produtos, setProdutos, setCurrentPage } = useApp();
+  const { confirm, modal } = useConfirm();
   const [busca, setBusca] = useState('');
   const [filtroStatus, setFiltroStatus] = useState<StatusEstoque | 'todos'>('todos');
 
@@ -22,14 +24,14 @@ export default function Estoque() {
     return matchBusca && matchStatus;
   });
 
-  const handleDelete = (id: string) => {
-    if (confirm('Deseja remover este produto do estoque?')) {
-      setProdutos(prev => prev.filter(p => p.id !== id));
-    }
+  const handleDelete = async (id: string) => {
+    const ok = await confirm('Deseja remover este produto do estoque?');
+    if (ok) setProdutos(prev => prev.filter(p => p.id !== id));
   };
 
   return (
     <div>
+      {modal}
       <div className="page-header">
         <div className="page-title">Estoque</div>
         <div className="page-subtitle">Controle de entradas e saídas de produtos</div>
@@ -71,7 +73,7 @@ export default function Estoque() {
             <option value="atencao">Atenção</option>
             <option value="critico">Crítico</option>
           </select>
-          <button className="btn btn-outline btn-sm">
+          <button className="btn btn-outline btn-sm" onClick={() => setCurrentPage('produtos')}>
             <Plus size={13} /> Registrar entrada
           </button>
         </div>
@@ -119,10 +121,18 @@ export default function Estoque() {
                   </td>
                   <td>
                     <div className="td-actions">
-                      <button className="btn btn-ghost btn-icon btn-sm" title="Editar">
+                      <button
+                        className="btn btn-ghost btn-icon btn-sm"
+                        title="Editar produto"
+                        onClick={() => setCurrentPage('produtos')}
+                      >
                         <Edit2 size={13} />
                       </button>
-                      <button className="btn btn-ghost btn-icon btn-sm" title="Excluir" onClick={() => handleDelete(p.id)}>
+                      <button
+                        className="btn btn-ghost btn-icon btn-sm"
+                        title="Excluir"
+                        onClick={() => handleDelete(p.id)}
+                      >
                         <Trash2 size={13} />
                       </button>
                     </div>

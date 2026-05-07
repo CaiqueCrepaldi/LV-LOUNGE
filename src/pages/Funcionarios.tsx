@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Plus, Edit2, Trash2, Search } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmModal';
 import type { User, UserRole } from '../types';
 
 const cargoLabels: Record<UserRole, string> = {
@@ -16,33 +18,50 @@ const initForm = { nome: '', usuario: '', telefone: '', cpf: '', email: '', carg
 export default function Funcionarios() {
   const { funcionarios, setFuncionarios } = useApp();
   const { user: me } = useAuth();
+  const toast = useToast();
+  const { confirm, modal } = useConfirm();
   const [form, setForm] = useState(initForm);
+  const [formError, setFormError] = useState('');
   const [busca, setBusca] = useState('');
   const [editandoId, setEditandoId] = useState<string | null>(null);
 
   const change = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
   const handleSubmit = () => {
-    if (!form.nome || !form.usuario) { alert('Nome e Usuário são obrigatórios.'); return; }
+    if (!form.nome || !form.usuario) {
+      setFormError('Nome e Usuário são obrigatórios.');
+      return;
+    }
+    setFormError('');
     if (editandoId) {
       setFuncionarios(prev => prev.map(f => f.id === editandoId ? { ...f, ...form, salario: Number(form.salario) } : f));
       setEditandoId(null);
+      toast('Funcionário atualizado com sucesso.');
     } else {
       const novo: User = { id: String(Date.now()), ...form, salario: Number(form.salario), ativo: true };
       setFuncionarios(prev => [...prev, novo]);
+      toast('Funcionário cadastrado com sucesso.');
     }
     setForm(initForm);
   };
 
   const handleEdit = (f: User) => {
+    setFormError('');
     setForm({ nome: f.nome, usuario: f.usuario, telefone: f.telefone, cpf: f.cpf, email: f.email, cargo: f.cargo, salario: String(f.salario), senha: '' });
     setEditandoId(f.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = (id: string) => {
-    if (id === me?.id) { alert('Você não pode excluir seu próprio usuário.'); return; }
-    if (confirm('Excluir este funcionário?')) setFuncionarios(prev => prev.filter(f => f.id !== id));
+  const handleDelete = async (id: string) => {
+    if (id === me?.id) {
+      toast('Você não pode excluir seu próprio usuário.', 'warning');
+      return;
+    }
+    const ok = await confirm('Excluir este funcionário permanentemente?');
+    if (ok) {
+      setFuncionarios(prev => prev.filter(f => f.id !== id));
+      toast('Funcionário removido.');
+    }
   };
 
   const filtered = funcionarios.filter(f =>
@@ -55,6 +74,7 @@ export default function Funcionarios() {
 
   return (
     <div>
+      {modal}
       <div className="page-header">
         <div className="page-title">Funcionários</div>
         <div className="page-subtitle">Gerenciamento de equipe e níveis de acesso</div>
@@ -110,11 +130,12 @@ export default function Funcionarios() {
                 <Plus size={14} /> {editandoId ? 'Salvar' : 'Criar funcionário'}
               </button>
               {editandoId && (
-                <button className="btn btn-ghost" onClick={() => { setEditandoId(null); setForm(initForm); }}>Cancelar</button>
+                <button className="btn btn-ghost" onClick={() => { setEditandoId(null); setForm(initForm); setFormError(''); }}>Cancelar</button>
               )}
             </div>
           </div>
         </div>
+        {formError && <div className="form-error" style={{ marginTop: 10 }}>{formError}</div>}
       </div>
 
       <div className="action-bar">
@@ -155,6 +176,9 @@ export default function Funcionarios() {
                   </td>
                 </tr>
               ))}
+              {filtered.length === 0 && (
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>Nenhum funcionário encontrado</td></tr>
+              )}
             </tbody>
           </table>
         </div>

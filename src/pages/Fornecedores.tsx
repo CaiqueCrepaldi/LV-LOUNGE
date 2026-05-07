@@ -1,20 +1,27 @@
 import { useState } from 'react';
 import { Plus, Edit2, Trash2, Search } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useConfirm } from '../components/ConfirmModal';
 import type { Fornecedor } from '../types';
 
 const initForm = { nome: '', cnpj: '', telefone: '', endereco: '', historicoTransacao: '', produtoFornecido: '' };
 
 export default function Fornecedores() {
   const { fornecedores, setFornecedores } = useApp();
+  const { confirm, modal } = useConfirm();
   const [form, setForm] = useState(initForm);
+  const [formError, setFormError] = useState('');
   const [busca, setBusca] = useState('');
   const [editandoId, setEditandoId] = useState<string | null>(null);
 
   const change = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
   const handleSubmit = () => {
-    if (!form.nome || !form.cnpj) { alert('Nome e CNPJ são obrigatórios.'); return; }
+    if (!form.nome || !form.cnpj) {
+      setFormError('Nome e CNPJ são obrigatórios.');
+      return;
+    }
+    setFormError('');
     if (editandoId) {
       setFornecedores(prev => prev.map(f => f.id === editandoId ? { ...f, ...form } : f));
       setEditandoId(null);
@@ -26,13 +33,15 @@ export default function Fornecedores() {
   };
 
   const handleEdit = (f: Fornecedor) => {
+    setFormError('');
     setForm({ nome: f.nome, cnpj: f.cnpj, telefone: f.telefone, endereco: f.endereco, historicoTransacao: f.historicoTransacao, produtoFornecido: f.produtoFornecido });
     setEditandoId(f.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Excluir este fornecedor?')) setFornecedores(prev => prev.filter(f => f.id !== id));
+  const handleDelete = async (id: string) => {
+    const ok = await confirm('Excluir este fornecedor permanentemente?');
+    if (ok) setFornecedores(prev => prev.filter(f => f.id !== id));
   };
 
   const filtered = fornecedores.filter(f =>
@@ -43,6 +52,7 @@ export default function Fornecedores() {
 
   return (
     <div>
+      {modal}
       <div className="page-header">
         <div className="page-title">Fornecedores</div>
         <div className="page-subtitle">Cadastro e controle de fornecedores</div>
@@ -78,12 +88,13 @@ export default function Fornecedores() {
             <input className="form-control" placeholder="Ex: Ballena, Redbull" value={form.produtoFornecido} onChange={e => change('produtoFornecido', e.target.value)} />
           </div>
         </div>
+        {formError && <div className="form-error" style={{ marginTop: 10 }}>{formError}</div>}
         <div className="form-actions" style={{ marginTop: 12 }}>
           <button className="btn btn-primary btn-sm" onClick={handleSubmit}>
             <Plus size={13} /> {editandoId ? 'Salvar' : 'Cadastrar fornecedor'}
           </button>
           {editandoId && (
-            <button className="btn btn-ghost btn-sm" onClick={() => { setEditandoId(null); setForm(initForm); }}>Cancelar</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setEditandoId(null); setForm(initForm); setFormError(''); }}>Cancelar</button>
           )}
         </div>
       </div>
@@ -93,6 +104,7 @@ export default function Fornecedores() {
           <Search size={14} />
           <input placeholder="Buscar fornecedor..." value={busca} onChange={e => setBusca(e.target.value)} />
         </div>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{filtered.length} fornecedor(es)</span>
       </div>
 
       <div className="card">

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Plus, Edit2, Trash2, Snowflake } from 'lucide-react';
+import { Plus, Trash2, Snowflake } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useConfirm } from '../components/ConfirmModal';
 import type { ItemGeladeira, StatusEstoque } from '../types';
 
 const statusBadge: Record<StatusEstoque, string> = {
@@ -10,19 +11,22 @@ const statusLabel: Record<StatusEstoque, string> = {
   normal: 'Normal', atencao: 'Atenção', critico: 'Crítico',
 };
 
+const initForm = { produtoId: '', categoria: 'bebida', quantidade: '', temperatura: '', horario: '', data: '' };
+
 export default function Geladeira() {
   const { geladeira, setGeladeira, produtos } = useApp();
-  const [form, setForm] = useState({
-    produtoId: '', categoria: 'bebida', quantidade: '', temperatura: '', horario: '', data: '',
-  });
+  const { confirm, modal } = useConfirm();
+  const [form, setForm] = useState(initForm);
+  const [formError, setFormError] = useState('');
 
   const handleChange = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
 
   const handleSubmit = () => {
     if (!form.produtoId || !form.quantidade || !form.temperatura) {
-      alert('Preencha os campos obrigatórios.');
+      setFormError('Produto, quantidade e temperatura são obrigatórios.');
       return;
     }
+    setFormError('');
     const produto = produtos.find(p => p.id === form.produtoId);
     const novo: ItemGeladeira = {
       id: String(Date.now()),
@@ -37,17 +41,17 @@ export default function Geladeira() {
       status: 'normal',
     };
     setGeladeira(prev => [...prev, novo]);
-    setForm({ produtoId: '', categoria: 'bebida', quantidade: '', temperatura: '', horario: '', data: '' });
+    setForm(initForm);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Remover este item da geladeira?')) {
-      setGeladeira(prev => prev.filter(i => i.id !== id));
-    }
+  const handleDelete = async (id: string) => {
+    const ok = await confirm('Remover este item da geladeira?');
+    if (ok) setGeladeira(prev => prev.filter(i => i.id !== id));
   };
 
   return (
     <div>
+      {modal}
       <div className="page-header">
         <div className="page-title">Geladeira da LV</div>
         <div className="page-subtitle">Controle de temperatura, data e horário de armazenamento</div>
@@ -93,6 +97,7 @@ export default function Geladeira() {
             <input className="form-control" type="date" value={form.data} onChange={e => handleChange('data', e.target.value)} />
           </div>
         </div>
+        {formError && <div className="form-error" style={{ marginTop: 10 }}>{formError}</div>}
         <div className="form-actions">
           <button className="btn btn-primary btn-sm" onClick={handleSubmit}>
             <Plus size={13} /> Registrar
@@ -113,10 +118,7 @@ export default function Geladeira() {
               <div key={item.id} className="fridge-card">
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
                   <div className="fridge-card-name">{item.produtoNome}</div>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    <button className="btn btn-ghost btn-icon btn-sm"><Edit2 size={12} /></button>
-                    <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDelete(item.id)}><Trash2 size={12} /></button>
-                  </div>
+                  <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDelete(item.id)}><Trash2 size={12} /></button>
                 </div>
                 <div className="fridge-temp">{item.temperatura}°C</div>
                 <div className="fridge-meta">

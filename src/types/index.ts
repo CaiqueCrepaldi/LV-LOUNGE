@@ -130,6 +130,15 @@ export interface DadoVendaSemanal {
   produtos: number;
 }
 
+// ─── API ──────────────────────────────────────────────────────────
+// Tipo de resposta padrão do backend PHP (usado quando BASE_URL for configurado)
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  errors?: Record<string, string[]>;
+}
+
 // ─── App State ────────────────────────────────────────────────────
 export type PageId =
   | 'dashboard'

@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { BarChart2, TrendingUp } from 'lucide-react';
-import { mockVendasDiarias, mockVendasSemanais } from '../data/mockData';
+import { useApp } from '../context/AppContext';
 
 type TabType = 'diario' | 'semanal';
 
 export default function Relatorios() {
+  const { vendasDiarias, vendasSemanais } = useApp();
   const [tab, setTab] = useState<TabType>('diario');
 
-  const maxDiario = Math.max(...mockVendasDiarias.map(d => d.quantidade));
-  const maxSemanal = Math.max(...mockVendasSemanais.map(d => d.lucro));
+  const maxDiario = Math.max(...vendasDiarias.map(d => d.quantidade));
+  const maxSemanal = Math.max(...vendasSemanais.map(d => d.lucro));
+  const totalDiario = vendasDiarias.reduce((s, d) => s + d.total, 0);
+  const mediaLucro = vendasSemanais.reduce((s, d) => s + d.lucro, 0) / vendasSemanais.length;
 
   return (
     <div>
@@ -34,13 +37,12 @@ export default function Relatorios() {
                 <span><BarChart2 size={14} style={{ display: 'inline', marginRight: 6 }} />Produtos mais vendidos — Hoje</span>
               </div>
               <div className="bar-chart" style={{ height: 120 }}>
-                {mockVendasDiarias.map((d, i) => {
+                {vendasDiarias.map((d, i) => {
                   const h = Math.max(8, (d.quantidade / maxDiario) * 100);
-                  const isPrimeiro = i === 0;
                   return (
                     <div className="bar-group" key={d.produto}>
                       <div
-                        className={`bar ${isPrimeiro ? 'bar-peak' : i < 3 ? 'bar-primary' : 'bar-pale'}`}
+                        className={`bar ${i === 0 ? 'bar-peak' : i < 3 ? 'bar-primary' : 'bar-pale'}`}
                         style={{ height: `${h}%` }}
                         title={`${d.produto}: ${d.quantidade} un · R$${d.total.toLocaleString()}`}
                       />
@@ -52,7 +54,7 @@ export default function Relatorios() {
                 })}
               </div>
               <div style={{ marginTop: 10, fontSize: 11, color: 'var(--text-muted)' }}>
-                Total vendido: R${mockVendasDiarias.reduce((s, d) => s + d.total, 0).toLocaleString()}
+                Total vendido: R${totalDiario.toLocaleString()}
               </div>
             </div>
 
@@ -90,9 +92,8 @@ export default function Relatorios() {
                   <tr><th>Produto</th><th>Qtd. vendida</th><th>Total R$</th><th>Participação</th></tr>
                 </thead>
                 <tbody>
-                  {mockVendasDiarias.map((d, i) => {
-                    const totalGeral = mockVendasDiarias.reduce((s, x) => s + d.total, 0);
-                    const pct = ((d.total / mockVendasDiarias.reduce((s, x) => s + x.total, 0)) * 100).toFixed(1);
+                  {vendasDiarias.map((d, i) => {
+                    const pct = ((d.total / totalDiario) * 100).toFixed(1);
                     return (
                       <tr key={d.produto}>
                         <td style={{ fontWeight: i === 0 ? 700 : 400 }}>
@@ -127,7 +128,7 @@ export default function Relatorios() {
                 <span><TrendingUp size={14} style={{ display: 'inline', marginRight: 6 }} />Lucro semanal (R$)</span>
               </div>
               <div className="bar-chart" style={{ height: 120 }}>
-                {mockVendasSemanais.map((d, i) => {
+                {vendasSemanais.map((d, i) => {
                   const h = Math.max(8, (d.lucro / maxSemanal) * 100);
                   const isPeak = d.lucro === maxSemanal;
                   return (
@@ -143,7 +144,7 @@ export default function Relatorios() {
                 })}
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, fontSize: 11, color: 'var(--text-muted)' }}>
-                <span>Total: R${mockVendasSemanais.reduce((s, d) => s + d.lucro, 0).toLocaleString()}</span>
+                <span>Total: R${vendasSemanais.reduce((s, d) => s + d.lucro, 0).toLocaleString()}</span>
                 <span>Pico: Sábado</span>
               </div>
             </div>
@@ -172,12 +173,11 @@ export default function Relatorios() {
             <div className="table-wrap">
               <table className="data-table">
                 <thead>
-                  <tr><th>Dia</th><th>Lucro</th><th>Qtd. produtos</th><th>Vs. semana anterior</th></tr>
+                  <tr><th>Dia</th><th>Lucro</th><th>Qtd. produtos</th><th>Vs. média semanal</th></tr>
                 </thead>
                 <tbody>
-                  {mockVendasSemanais.map((d, i) => {
-                    const mediaGeral = mockVendasSemanais.reduce((s, x) => s + x.lucro, 0) / mockVendasSemanais.length;
-                    const delta = ((d.lucro - mediaGeral) / mediaGeral * 100).toFixed(0);
+                  {vendasSemanais.map(d => {
+                    const delta = ((d.lucro - mediaLucro) / mediaLucro * 100).toFixed(0);
                     const positivo = Number(delta) >= 0;
                     return (
                       <tr key={d.dia}>
