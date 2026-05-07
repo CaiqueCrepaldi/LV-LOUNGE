@@ -69,7 +69,12 @@ export default function Funcionarios() {
     setFormError('');
     const salario = parseSalario(form.salario);
     if (editandoId) {
-      setFuncionarios(prev => prev.map(f => f.id === editandoId ? { ...f, ...form, salario } : f));
+      setFuncionarios(prev => prev.map(f => {
+        if (f.id !== editandoId) return f;
+        const updated = { ...f, ...form, salario };
+        if (!form.senha) updated.senha = f.senha;
+        return updated;
+      }));
       setEditandoId(null);
       toast('Funcionário atualizado com sucesso.');
     } else {

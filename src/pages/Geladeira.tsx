@@ -22,7 +22,7 @@ export default function Geladeira() {
   const handleChange = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
 
   const handleSubmit = () => {
-    if (!form.produtoId || !form.quantidade || !form.temperatura) {
+    if (!form.produtoId || !form.quantidade || form.temperatura === '') {
       setFormError('Produto, quantidade e temperatura são obrigatórios.');
       return;
     }

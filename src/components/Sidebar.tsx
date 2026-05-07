@@ -49,7 +49,7 @@ export default function Sidebar() {
   const { user, logout, isGerente } = useAuth();
   const { currentPage, setCurrentPage, notificacoesNaoLidas } = useApp();
 
-  const initials = user?.nome.split(' ').map(n => n[0]).slice(0, 2).join('') ?? '??';
+  const initials = user?.nome?.split(' ').map(n => n[0]).slice(0, 2).join('') ?? '??';
   const cargoLabel: Record<string, string> = {
     gerente: 'Gerente · Admin',
     barman: 'Barman',

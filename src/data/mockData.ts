@@ -88,17 +88,17 @@ export const mockFornecedores: Fornecedor[] = [
 export const mockGeladeira: ItemGeladeira[] = [
   {
     id: '1', produtoId: '1', produtoNome: 'Ballena', categoria: 'bebida',
-    quantidade: 200, temperatura: -5, horario: '15:30', data: '13/11/2024',
+    quantidade: 200, temperatura: -5, horario: '15:30', data: '2024-11-13',
     validade: '2025-12-31', status: 'normal',
   },
   {
     id: '2', produtoId: '3', produtoNome: 'Peixe (Tilápia)', categoria: 'alimento',
-    quantidade: 18, temperatura: -8, horario: '09:00', data: '12/11/2024',
+    quantidade: 18, temperatura: -8, horario: '09:00', data: '2024-11-12',
     validade: '2024-12-15', status: 'critico',
   },
   {
     id: '3', produtoId: '5', produtoNome: 'Frango', categoria: 'alimento',
-    quantidade: 40, temperatura: -6, horario: '11:00', data: '13/11/2024',
+    quantidade: 40, temperatura: -6, horario: '11:00', data: '2024-11-13',
     validade: '2024-12-20', status: 'normal',
   },
 ];
@@ -116,27 +116,27 @@ export const mockVendas: Venda[] = [
 ];
 
 export const mockMovimentacoes: Movimentacao[] = [
-  { id: '1', produtoId: '1', produtoNome: 'Ballena', tipo: 'saida', quantidade: 12, horario: '21:34', data: '13/11/2024', funcionarioNome: 'Roberto', status: 'ok' },
-  { id: '2', produtoId: '2', produtoNome: 'Redbull', tipo: 'entrada', quantidade: 48, horario: '20:10', data: '13/11/2024', funcionarioNome: 'Maria', status: 'ok' },
-  { id: '3', produtoId: '3', produtoNome: 'Porção Tilápia', tipo: 'saida', quantidade: 5, horario: '19:55', data: '13/11/2024', funcionarioNome: 'Roberto', status: 'ok' },
-  { id: '4', produtoId: '4', produtoNome: 'Whisky Combo', tipo: 'saida', quantidade: 3, horario: '19:20', data: '13/11/2024', funcionarioNome: 'Ana', status: 'verificar' },
+  { id: '1', produtoId: '1', produtoNome: 'Ballena', tipo: 'saida', quantidade: 12, horario: '21:34', data: '2024-11-13', funcionarioNome: 'Roberto', status: 'ok' },
+  { id: '2', produtoId: '2', produtoNome: 'Redbull', tipo: 'entrada', quantidade: 48, horario: '20:10', data: '2024-11-13', funcionarioNome: 'Maria', status: 'ok' },
+  { id: '3', produtoId: '3', produtoNome: 'Porção Tilápia', tipo: 'saida', quantidade: 5, horario: '19:55', data: '2024-11-13', funcionarioNome: 'Roberto', status: 'ok' },
+  { id: '4', produtoId: '4', produtoNome: 'Whisky Combo', tipo: 'saida', quantidade: 3, horario: '19:20', data: '2024-11-13', funcionarioNome: 'Ana', status: 'verificar' },
 ];
 
 export const mockNotificacoes: Notificacao[] = [
   {
     id: '1', tipo: 'estoque', severidade: 'critico', titulo: 'Estoque crítico: Ballena',
     mensagem: 'Seu estoque de Ballena está próximo do mínimo (62/60 produtos). Solicite reposição imediatamente.',
-    data: '13/11/2024', horario: '21:30', lida: false,
+    data: '2024-11-13', horario: '21:30', lida: false,
   },
   {
     id: '2', tipo: 'validade', severidade: 'aviso', titulo: 'Validade próxima: Peixe (Tilápia)',
     mensagem: 'Seu estoque de peixe está próximo de vencer (15/12/2024 — menos de 1 semana).',
-    data: '13/11/2024', horario: '09:00', lida: false,
+    data: '2024-11-13', horario: '09:00', lida: false,
   },
   {
     id: '3', tipo: 'manutencao', severidade: 'info', titulo: 'Manutenção preventiva',
     mensagem: 'A manutenção dos seus equipamentos pode estar próxima (Data: Mês 12).',
-    data: '12/11/2024', horario: '15:00', lida: false,
+    data: '2024-11-12', horario: '15:00', lida: false,
   },
 ];
 

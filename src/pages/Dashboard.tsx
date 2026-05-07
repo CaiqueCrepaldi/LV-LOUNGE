@@ -57,7 +57,7 @@ export default function Dashboard() {
   return (
     <div>
       <div className="page-header">
-        <div className="page-title">{nomeHora}, {user?.nome.split(' ')[0]} 👋</div>
+        <div className="page-title">{nomeHora}, {user?.nome?.split(' ')[0]} 👋</div>
         <div className="page-subtitle" style={{ textTransform: 'capitalize' }}>
           {dataFormatada} · LV Lounge
         </div>
