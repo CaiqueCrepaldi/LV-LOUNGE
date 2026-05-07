@@ -13,6 +13,33 @@ const cargoBadge: Record<UserRole, string> = {
   gerente: 'badge-blue', barman: 'badge-amber', garcom: 'badge-gray', cozinheiro: 'badge-green',
 };
 
+// ── Máscaras ──────────────────────────────────────────────────────
+const maskCPF = (v: string) => {
+  const d = v.replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
+  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+};
+
+const maskPhone = (v: string) => {
+  const d = v.replace(/\D/g, '').slice(0, 11);
+  if (d.length === 0) return '';
+  if (d.length <= 2) return `(${d}`;
+  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+};
+
+const formatSalario = (v: string) => {
+  const num = parseFloat(v.replace(/\./g, '').replace(',', '.'));
+  if (!v || isNaN(num)) return '';
+  return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+const parseSalario = (v: string) =>
+  parseFloat(v.replace(/\./g, '').replace(',', '.')) || 0;
+
 const initForm = { nome: '', usuario: '', telefone: '', cpf: '', email: '', cargo: 'barman' as UserRole, salario: '', senha: '' };
 
 export default function Funcionarios() {
@@ -33,12 +60,13 @@ export default function Funcionarios() {
       return;
     }
     setFormError('');
+    const salario = parseSalario(form.salario);
     if (editandoId) {
-      setFuncionarios(prev => prev.map(f => f.id === editandoId ? { ...f, ...form, salario: Number(form.salario) } : f));
+      setFuncionarios(prev => prev.map(f => f.id === editandoId ? { ...f, ...form, salario } : f));
       setEditandoId(null);
       toast('Funcionário atualizado com sucesso.');
     } else {
-      const novo: User = { id: String(Date.now()), ...form, salario: Number(form.salario), ativo: true };
+      const novo: User = { id: String(Date.now()), ...form, salario, ativo: true };
       setFuncionarios(prev => [...prev, novo]);
       toast('Funcionário cadastrado com sucesso.');
     }
@@ -47,7 +75,16 @@ export default function Funcionarios() {
 
   const handleEdit = (f: User) => {
     setFormError('');
-    setForm({ nome: f.nome, usuario: f.usuario, telefone: f.telefone, cpf: f.cpf, email: f.email, cargo: f.cargo, salario: String(f.salario), senha: '' });
+    setForm({
+      nome: f.nome,
+      usuario: f.usuario,
+      telefone: f.telefone,
+      cpf: f.cpf,
+      email: f.email,
+      cargo: f.cargo,
+      salario: f.salario.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      senha: '',
+    });
     setEditandoId(f.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -85,25 +122,53 @@ export default function Funcionarios() {
         <div className="form-row form-row-3" style={{ marginBottom: 12 }}>
           <div className="form-group">
             <div className="form-label">Nome completo *</div>
-            <input className="form-control" placeholder="Nome Sobrenome" value={form.nome} onChange={e => change('nome', e.target.value)} />
+            <input
+              className="form-control"
+              placeholder="Nome Sobrenome"
+              value={form.nome}
+              onChange={e => change('nome', e.target.value)}
+            />
           </div>
           <div className="form-group">
             <div className="form-label">Usuário *</div>
-            <input className="form-control" placeholder="nome.sobrenome" value={form.usuario} onChange={e => change('usuario', e.target.value)} />
+            <input
+              className="form-control"
+              placeholder="nome.sobrenome"
+              value={form.usuario}
+              onChange={e => change('usuario', e.target.value)}
+            />
           </div>
           <div className="form-group">
             <div className="form-label">Telefone</div>
-            <input className="form-control" placeholder="(11) 99999-9999" value={form.telefone} onChange={e => change('telefone', e.target.value)} />
+            <input
+              className="form-control"
+              placeholder="(11) 99999-9999"
+              value={form.telefone}
+              onChange={e => change('telefone', maskPhone(e.target.value))}
+              inputMode="numeric"
+            />
           </div>
         </div>
         <div className="form-row form-row-3" style={{ marginBottom: 12 }}>
           <div className="form-group">
             <div className="form-label">CPF</div>
-            <input className="form-control" placeholder="000.000.000-00" value={form.cpf} onChange={e => change('cpf', e.target.value)} />
+            <input
+              className="form-control"
+              placeholder="000.000.000-00"
+              value={form.cpf}
+              onChange={e => change('cpf', maskCPF(e.target.value))}
+              inputMode="numeric"
+            />
           </div>
           <div className="form-group">
             <div className="form-label">E-mail</div>
-            <input className="form-control" type="email" placeholder="email@email.com" value={form.email} onChange={e => change('email', e.target.value)} />
+            <input
+              className="form-control"
+              type="email"
+              placeholder="email@email.com"
+              value={form.email}
+              onChange={e => change('email', e.target.value)}
+            />
           </div>
           <div className="form-group">
             <div className="form-label">Cargo / Nível de acesso</div>
@@ -118,11 +183,24 @@ export default function Funcionarios() {
         <div className="form-row form-row-3">
           <div className="form-group">
             <div className="form-label">Salário (R$)</div>
-            <input className="form-control" placeholder="0,00" value={form.salario} onChange={e => change('salario', e.target.value)} />
+            <input
+              className="form-control"
+              placeholder="0,00"
+              value={form.salario}
+              onChange={e => change('salario', e.target.value.replace(/[^\d,]/g, ''))}
+              onBlur={e => change('salario', formatSalario(e.target.value))}
+              inputMode="decimal"
+            />
           </div>
           <div className="form-group">
             <div className="form-label">Senha</div>
-            <input className="form-control" type="password" placeholder="••••••••" value={form.senha} onChange={e => change('senha', e.target.value)} />
+            <input
+              className="form-control"
+              type="password"
+              placeholder="••••••••"
+              value={form.senha}
+              onChange={e => change('senha', e.target.value)}
+            />
           </div>
           <div className="form-group" style={{ justifyContent: 'flex-end' }}>
             <div className="form-actions">
@@ -167,7 +245,7 @@ export default function Funcionarios() {
                   <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{f.cpf}</td>
                   <td style={{ fontSize: 11 }}>{f.email}</td>
                   <td><span className={`badge ${cargoBadge[f.cargo]}`}>{cargoLabels[f.cargo]}</span></td>
-                  <td style={{ fontWeight: 500 }}>R${f.salario.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                  <td style={{ fontWeight: 500 }}>R$ {f.salario.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                   <td>
                     <div className="td-actions">
                       <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleEdit(f)}><Edit2 size={13} /></button>

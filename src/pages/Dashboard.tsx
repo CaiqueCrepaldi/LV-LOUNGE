@@ -128,7 +128,7 @@ export default function Dashboard() {
                   <td>{m.quantidade}</td>
                   <td style={{ color: 'var(--text-muted)' }}>{m.horario}</td>
                   <td>{m.funcionarioNome}</td>
-                  <td><span className={`badge ${statusColors[m.status]}`}>{m.status === 'ok' ? 'OK' : 'Verificar'}</span></td>
+                  <td><span className={`badge ${statusColors[m.status]}`}>{m.status === 'ok' ? 'OK' : m.status === 'erro' ? 'Erro' : 'Verificar'}</span></td>
                 </tr>
               ))}
             </tbody>
