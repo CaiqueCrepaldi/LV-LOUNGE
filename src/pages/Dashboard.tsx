@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 
 export default function Dashboard() {
-  const { produtos, movimentacoes, notificacoes, funcionarios, vendasSemanais } = useApp();
+  const { produtos, movimentacoes, notificacoes, funcionarios, vendasSemanais, vendas } = useApp();
   const { user } = useAuth();
 
   const naoLidas = notificacoes.filter(n => !n.lida).length;
@@ -14,6 +14,43 @@ export default function Dashboard() {
   const hoje = new Date();
   const nomeHora = hoje.getHours() < 12 ? 'Bom dia' : hoje.getHours() < 18 ? 'Boa tarde' : 'Boa noite';
   const dataFormatada = hoje.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+
+  // ── Vendas hoje e ontem ───────────────────────────────────────────
+  const hojeISO = hoje.toISOString().slice(0, 10);
+  const ontemISO = new Date(hoje.getTime() - 86_400_000).toISOString().slice(0, 10);
+
+  const vendasHoje = vendas
+    .filter(v => v.data === hojeISO && v.status !== 'cancelada')
+    .reduce((s, v) => s + v.total, 0);
+
+  const vendasOntem = vendas
+    .filter(v => v.data === ontemISO && v.status !== 'cancelada')
+    .reduce((s, v) => s + v.total, 0);
+
+  const tendencia = vendasOntem > 0
+    ? Math.round((vendasHoje - vendasOntem) / vendasOntem * 100)
+    : null;
+
+  // ── Total semanal (mock histórico + vendas reais desta semana) ────
+  const diaDaSemana = hoje.getDay();
+  const offsetSegunda = diaDaSemana === 0 ? 6 : diaDaSemana - 1;
+  const inicioSemana = new Date(hoje);
+  inicioSemana.setDate(hoje.getDate() - offsetSegunda);
+  inicioSemana.setHours(0, 0, 0, 0);
+
+  const totalSemanaReal = vendas
+    .filter(v => new Date(v.data + 'T00:00:00') >= inicioSemana && v.status !== 'cancelada')
+    .reduce((s, v) => s + v.total, 0);
+
+  const totalSemanaMock = vendasSemanais.reduce((s, d) => s + d.lucro, 0);
+  const totalSemana = totalSemanaMock + totalSemanaReal;
+
+  // ── Top produto real (por faturamento) ───────────────────────────
+  const produtoFat: Record<string, number> = {};
+  vendas.forEach(v => v.itens.forEach(i => {
+    produtoFat[i.descricao] = (produtoFat[i.descricao] ?? 0) + i.total;
+  }));
+  const topProduto = Object.entries(produtoFat).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'Ballena';
 
   const maxLucro = Math.max(...vendasSemanais.map(d => d.lucro));
 
@@ -35,8 +72,12 @@ export default function Dashboard() {
         <div className="metric-card">
           <div className="metric-icon icon-green"><TrendingUp /></div>
           <div className="metric-label">VENDAS HOJE</div>
-          <div className="metric-value">R$4.820</div>
-          <div className="metric-trend trend-up">↑ +12% vs ontem</div>
+          <div className="metric-value">R${vendasHoje.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+          <div className={`metric-trend ${tendencia === null ? 'trend-neutral' : tendencia >= 0 ? 'trend-up' : 'trend-down'}`}>
+            {tendencia === null
+              ? 'Sem dados de ontem'
+              : `${tendencia >= 0 ? '↑' : '↓'} ${tendencia >= 0 ? '+' : ''}${tendencia}% vs ontem`}
+          </div>
         </div>
         <div className="metric-card">
           <div className="metric-icon icon-blue"><Package /></div>
@@ -79,8 +120,8 @@ export default function Dashboard() {
             })}
           </div>
           <div className="flex justify-between" style={{ marginTop: 10, fontSize: 10, color: 'var(--text-muted)' }}>
-            <span>Total semana: R${vendasSemanais.reduce((s, d) => s + d.lucro, 0).toLocaleString()}</span>
-            <span>Top: Ballena</span>
+            <span>Total semana: R${totalSemana.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            <span>Top: {topProduto}</span>
           </div>
         </div>
 
