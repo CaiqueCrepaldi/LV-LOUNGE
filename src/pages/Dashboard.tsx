@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 
 export default function Dashboard() {
-  const { produtos, movimentacoes, notificacoes, funcionarios, vendasSemanais, vendas } = useApp();
+  const { produtos, notificacoes, funcionarios, vendasSemanais, vendas } = useApp();
   const { user } = useAuth();
 
   const naoLidas = notificacoes.filter(n => !n.lida).length;
@@ -53,10 +53,6 @@ export default function Dashboard() {
   const topProduto = Object.entries(produtoFat).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'Ballena';
 
   const maxLucro = Math.max(...vendasSemanais.map(d => d.lucro));
-
-  const statusColors: Record<string, string> = {
-    ok: 'badge-green', verificar: 'badge-amber', erro: 'badge-red',
-  };
 
   return (
     <div>
@@ -142,36 +138,41 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Movimentações recentes */}
+      {/* Vendas recentes */}
       <div className="card">
-        <div className="card-title">Movimentações recentes</div>
+        <div className="card-title">Vendas recentes</div>
         <div className="table-wrap">
           <table className="data-table">
             <thead>
               <tr>
-                <th>Produto</th>
-                <th>Tipo</th>
-                <th>Qtd</th>
-                <th>Horário</th>
+                <th>Comanda</th>
                 <th>Funcionário</th>
+                <th>Itens</th>
+                <th>Total</th>
+                <th>Data</th>
+                <th>Horário</th>
                 <th>Status</th>
               </tr>
             </thead>
             <tbody>
-              {movimentacoes.map(m => (
-                <tr key={m.id}>
-                  <td style={{ fontWeight: 500 }}>{m.produtoNome}</td>
+              {vendas.slice().reverse().slice(0, 8).map(v => (
+                <tr key={v.id}>
+                  <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>#{v.comanda}</td>
+                  <td>{v.funcionarioNome}</td>
+                  <td style={{ color: 'var(--text-muted)' }}>{v.itens.reduce((s, i) => s + i.quantidade, 0)} un</td>
+                  <td style={{ fontWeight: 600 }}>R${v.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                  <td style={{ color: 'var(--text-muted)', fontSize: 11 }}>{new Date(v.data + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+                  <td style={{ color: 'var(--text-muted)' }}>{v.horario}</td>
                   <td>
-                    <span className={`badge ${m.tipo === 'entrada' ? 'badge-green' : 'badge-blue'}`}>
-                      {m.tipo === 'entrada' ? '↑ Entrada' : '↓ Saída'}
+                    <span className={`badge ${v.status === 'fechada' ? 'badge-green' : v.status === 'cancelada' ? 'badge-red' : 'badge-amber'}`}>
+                      {v.status === 'fechada' ? 'Fechada' : v.status === 'cancelada' ? 'Cancelada' : 'Aberta'}
                     </span>
                   </td>
-                  <td>{m.quantidade}</td>
-                  <td style={{ color: 'var(--text-muted)' }}>{m.horario}</td>
-                  <td>{m.funcionarioNome}</td>
-                  <td><span className={`badge ${statusColors[m.status]}`}>{m.status === 'ok' ? 'OK' : m.status === 'erro' ? 'Erro' : 'Verificar'}</span></td>
                 </tr>
               ))}
+              {vendas.length === 0 && (
+                <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '32px 0' }}>Nenhuma venda registrada</td></tr>
+              )}
             </tbody>
           </table>
         </div>
