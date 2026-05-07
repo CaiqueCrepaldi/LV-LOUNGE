@@ -45,7 +45,11 @@ export interface Fornecedor {
   nome: string;
   cnpj: string;
   telefone: string;
-  endereco: string;
+  logradouro: string;
+  numero: string;
+  cep: string;
+  cidade: string;
+  estado: string;
   historicoTransacao: string;
   produtoFornecido: string;
 }

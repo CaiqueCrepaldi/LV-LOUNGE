@@ -73,13 +73,15 @@ export const mockProdutos: Produto[] = [
 export const mockFornecedores: Fornecedor[] = [
   {
     id: '1', nome: 'Adega JR', cnpj: '00.000.000/0001-00', telefone: '(11) 0000-0000',
-    endereco: 'Av. Armando Salles, 100 - Mogi das Cruzes', historicoTransacao: 'Ativo desde 2023',
-    produtoFornecido: 'Ballena',
+    logradouro: 'Av. Armando Salles', numero: '100', cep: '08780-000',
+    cidade: 'Mogi das Cruzes', estado: 'SP',
+    historicoTransacao: 'Ativo desde 2023', produtoFornecido: 'Ballena',
   },
   {
     id: '2', nome: 'Distribuidora RedBull SP', cnpj: '11.111.111/0001-11', telefone: '(11) 1111-1111',
-    endereco: 'Rua das Flores, 200 - São Paulo', historicoTransacao: 'Ativo desde 2022',
-    produtoFornecido: 'Redbull',
+    logradouro: 'Rua das Flores', numero: '200', cep: '01310-100',
+    cidade: 'São Paulo', estado: 'SP',
+    historicoTransacao: 'Ativo desde 2022', produtoFornecido: 'Redbull',
   },
 ];
 

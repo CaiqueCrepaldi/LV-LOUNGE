@@ -1,13 +1,49 @@
 import { useState } from 'react';
 import { Plus, Edit2, Trash2, Search } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import type { Fornecedor } from '../types';
 
-const initForm = { nome: '', cnpj: '', telefone: '', endereco: '', historicoTransacao: '', produtoFornecido: '' };
+// ── Máscaras ──────────────────────────────────────────────────────
+const maskCNPJ = (v: string) => {
+  const d = v.replace(/\D/g, '').slice(0, 14);
+  if (d.length <= 2) return d;
+  if (d.length <= 5) return `${d.slice(0, 2)}.${d.slice(2)}`;
+  if (d.length <= 8) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5)}`;
+  if (d.length <= 12) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8)}`;
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+};
+
+const maskPhone = (v: string) => {
+  const d = v.replace(/\D/g, '').slice(0, 11);
+  if (d.length === 0) return '';
+  if (d.length <= 2) return `(${d}`;
+  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+};
+
+const maskCEP = (v: string) => {
+  const d = v.replace(/\D/g, '').slice(0, 8);
+  if (d.length <= 5) return d;
+  return `${d.slice(0, 5)}-${d.slice(5)}`;
+};
+
+const ESTADOS = [
+  'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG',
+  'PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO',
+];
+
+const initForm = {
+  nome: '', cnpj: '', telefone: '',
+  logradouro: '', numero: '', cep: '', cidade: '', estado: '',
+  historicoTransacao: '', produtoFornecido: '',
+};
 
 export default function Fornecedores() {
   const { fornecedores, setFornecedores } = useApp();
+  const toast = useToast();
   const { confirm, modal } = useConfirm();
   const [form, setForm] = useState(initForm);
   const [formError, setFormError] = useState('');
@@ -25,28 +61,44 @@ export default function Fornecedores() {
     if (editandoId) {
       setFornecedores(prev => prev.map(f => f.id === editandoId ? { ...f, ...form } : f));
       setEditandoId(null);
+      toast('Fornecedor atualizado com sucesso.');
     } else {
       const novo: Fornecedor = { id: String(Date.now()), ...form };
       setFornecedores(prev => [...prev, novo]);
+      toast('Fornecedor cadastrado com sucesso.');
     }
     setForm(initForm);
   };
 
   const handleEdit = (f: Fornecedor) => {
     setFormError('');
-    setForm({ nome: f.nome, cnpj: f.cnpj, telefone: f.telefone, endereco: f.endereco, historicoTransacao: f.historicoTransacao, produtoFornecido: f.produtoFornecido });
+    setForm({
+      nome: f.nome, cnpj: f.cnpj, telefone: f.telefone,
+      logradouro: f.logradouro, numero: f.numero, cep: f.cep,
+      cidade: f.cidade, estado: f.estado,
+      historicoTransacao: f.historicoTransacao, produtoFornecido: f.produtoFornecido,
+    });
     setEditandoId(f.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = async (id: string) => {
     const ok = await confirm('Excluir este fornecedor permanentemente?');
-    if (ok) setFornecedores(prev => prev.filter(f => f.id !== id));
+    if (ok) {
+      setFornecedores(prev => prev.filter(f => f.id !== id));
+      toast('Fornecedor removido.');
+    }
+  };
+
+  const enderecoCompleto = (f: Fornecedor) => {
+    const partes = [f.logradouro, f.numero && `nº ${f.numero}`, f.cidade, f.estado].filter(Boolean);
+    return partes.join(', ') || '—';
   };
 
   const filtered = fornecedores.filter(f =>
     f.nome.toLowerCase().includes(busca.toLowerCase()) ||
     f.cnpj.includes(busca) ||
+    f.cidade.toLowerCase().includes(busca.toLowerCase()) ||
     f.produtoFornecido.toLowerCase().includes(busca.toLowerCase())
   );
 
@@ -59,44 +111,129 @@ export default function Fornecedores() {
       </div>
 
       <div className="card mb-18">
-        <div className="card-title">{editandoId ? 'Editar fornecedor' : 'Novo fornecedor'}</div>
+        <div className="card-title">{editandoId ? 'Editar fornecedor' : 'Cadastrar fornecedor'}</div>
+
+        {/* Linha 1: Nome, CNPJ, Telefone */}
         <div className="form-row form-row-3" style={{ marginBottom: 12 }}>
           <div className="form-group">
             <div className="form-label">Nome do fornecedor *</div>
-            <input className="form-control" placeholder="Ex: Adega JR" value={form.nome} onChange={e => change('nome', e.target.value)} />
+            <input
+              className="form-control"
+              placeholder="Ex: Adega JR"
+              value={form.nome}
+              onChange={e => change('nome', e.target.value)}
+            />
           </div>
           <div className="form-group">
             <div className="form-label">CNPJ *</div>
-            <input className="form-control" placeholder="00.000.000/0001-00" value={form.cnpj} onChange={e => change('cnpj', e.target.value)} />
+            <input
+              className="form-control"
+              placeholder="00.000.000/0001-00"
+              value={form.cnpj}
+              onChange={e => change('cnpj', maskCNPJ(e.target.value))}
+              inputMode="numeric"
+            />
           </div>
-          <div className="form-group">
-            <div className="form-label">Endereço</div>
-            <input className="form-control" placeholder="Rua, número - Cidade" value={form.endereco} onChange={e => change('endereco', e.target.value)} />
-          </div>
-        </div>
-        <div className="form-row form-row-3">
           <div className="form-group">
             <div className="form-label">Telefone</div>
-            <input className="form-control" placeholder="(11) 0000-0000" value={form.telefone} onChange={e => change('telefone', e.target.value)} />
+            <input
+              className="form-control"
+              placeholder="(11) 99999-9999"
+              value={form.telefone}
+              onChange={e => change('telefone', maskPhone(e.target.value))}
+              inputMode="numeric"
+            />
+          </div>
+        </div>
+
+        {/* Linha 2: Logradouro, Número, CEP */}
+        <div className="form-row form-row-3" style={{ marginBottom: 12 }}>
+          <div className="form-group">
+            <div className="form-label">Logradouro</div>
+            <input
+              className="form-control"
+              placeholder="Rua, Av., Travessa..."
+              value={form.logradouro}
+              onChange={e => change('logradouro', e.target.value)}
+            />
           </div>
           <div className="form-group">
-            <div className="form-label">Histórico de transação</div>
-            <input className="form-control" placeholder="Ex: Ativo desde 2023" value={form.historicoTransacao} onChange={e => change('historicoTransacao', e.target.value)} />
+            <div className="form-label">Número</div>
+            <input
+              className="form-control"
+              placeholder="Ex: 100"
+              value={form.numero}
+              onChange={e => change('numero', e.target.value.replace(/\D/g, ''))}
+              inputMode="numeric"
+            />
+          </div>
+          <div className="form-group">
+            <div className="form-label">CEP</div>
+            <input
+              className="form-control"
+              placeholder="00000-000"
+              value={form.cep}
+              onChange={e => change('cep', maskCEP(e.target.value))}
+              inputMode="numeric"
+            />
+          </div>
+        </div>
+
+        {/* Linha 3: Cidade, Estado, Produto fornecido */}
+        <div className="form-row form-row-3" style={{ marginBottom: 12 }}>
+          <div className="form-group">
+            <div className="form-label">Cidade</div>
+            <input
+              className="form-control"
+              placeholder="Ex: São Paulo"
+              value={form.cidade}
+              onChange={e => change('cidade', e.target.value)}
+            />
+          </div>
+          <div className="form-group">
+            <div className="form-label">Estado</div>
+            <select className="form-control" value={form.estado} onChange={e => change('estado', e.target.value)}>
+              <option value="">Selecione</option>
+              {ESTADOS.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+            </select>
           </div>
           <div className="form-group">
             <div className="form-label">Produto fornecido</div>
-            <input className="form-control" placeholder="Ex: Ballena, Redbull" value={form.produtoFornecido} onChange={e => change('produtoFornecido', e.target.value)} />
+            <input
+              className="form-control"
+              placeholder="Ex: Ballena, Redbull"
+              value={form.produtoFornecido}
+              onChange={e => change('produtoFornecido', e.target.value)}
+            />
           </div>
         </div>
-        {formError && <div className="form-error" style={{ marginTop: 10 }}>{formError}</div>}
-        <div className="form-actions" style={{ marginTop: 12 }}>
-          <button className="btn btn-primary btn-sm" onClick={handleSubmit}>
-            <Plus size={13} /> {editandoId ? 'Salvar' : 'Cadastrar fornecedor'}
-          </button>
-          {editandoId && (
-            <button className="btn btn-ghost btn-sm" onClick={() => { setEditandoId(null); setForm(initForm); setFormError(''); }}>Cancelar</button>
-          )}
+
+        {/* Linha 4: Histórico + botões */}
+        <div className="form-row form-row-3">
+          <div className="form-group" style={{ gridColumn: '1 / span 2' }}>
+            <div className="form-label">Histórico de transação</div>
+            <input
+              className="form-control"
+              placeholder="Ex: Ativo desde 2023"
+              value={form.historicoTransacao}
+              onChange={e => change('historicoTransacao', e.target.value)}
+            />
+          </div>
+          <div className="form-group" style={{ justifyContent: 'flex-end' }}>
+            <div className="form-actions">
+              <button className="btn btn-primary" onClick={handleSubmit}>
+                <Plus size={14} /> {editandoId ? 'Salvar' : 'Cadastrar fornecedor'}
+              </button>
+              {editandoId && (
+                <button className="btn btn-ghost" onClick={() => { setEditandoId(null); setForm(initForm); setFormError(''); }}>
+                  Cancelar
+                </button>
+              )}
+            </div>
+          </div>
         </div>
+
+        {formError && <div className="form-error" style={{ marginTop: 10 }}>{formError}</div>}
       </div>
 
       <div className="action-bar">
@@ -111,7 +248,16 @@ export default function Fornecedores() {
         <div className="table-wrap">
           <table className="data-table">
             <thead>
-              <tr><th>Nome</th><th>CNPJ</th><th>Telefone</th><th>Endereço</th><th>Histórico</th><th>Produto</th><th>Ações</th></tr>
+              <tr>
+                <th>Nome</th>
+                <th>CNPJ</th>
+                <th>Telefone</th>
+                <th>Endereço</th>
+                <th>CEP</th>
+                <th>Histórico</th>
+                <th>Produto</th>
+                <th>Ações</th>
+              </tr>
             </thead>
             <tbody>
               {filtered.map(f => (
@@ -119,9 +265,10 @@ export default function Fornecedores() {
                   <td style={{ fontWeight: 500 }}>{f.nome}</td>
                   <td style={{ fontFamily: 'monospace', fontSize: 11 }}>{f.cnpj}</td>
                   <td>{f.telefone}</td>
-                  <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{f.endereco}</td>
+                  <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{enderecoCompleto(f)}</td>
+                  <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{f.cep || '—'}</td>
                   <td style={{ fontSize: 11 }}>{f.historicoTransacao}</td>
-                  <td><span className="badge badge-blue">{f.produtoFornecido}</span></td>
+                  <td><span className="badge badge-blue">{f.produtoFornecido || '—'}</span></td>
                   <td>
                     <div className="td-actions">
                       <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleEdit(f)}><Edit2 size={13} /></button>
@@ -131,7 +278,7 @@ export default function Fornecedores() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>Nenhum fornecedor cadastrado</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>Nenhum fornecedor cadastrado</td></tr>
               )}
             </tbody>
           </table>
