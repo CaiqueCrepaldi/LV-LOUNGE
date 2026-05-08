@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Plus, X, ShoppingCart, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Plus, X, ShoppingCart, CheckCircle, AlertTriangle, CreditCard, Banknote, Zap } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
-import type { ItemComanda, TipoImposto } from '../types';
+import type { ItemComanda, TipoImposto, FormaPagamento } from '../types';
 import { formatCurrency, parseCurrency } from '../utils/masks';
 
 let itemIdCounter = 100;
@@ -23,6 +23,25 @@ const categoriaEmoji: Record<string, string> = {
 const mapImpostoTipo = (imp: number): TipoImposto =>
   imp === 5 ? 'iss_5' : imp === 12 ? 'icms_12' : 'isento';
 
+const formaLabel: Record<FormaPagamento, string> = {
+  debito: 'Débito', credito: 'Crédito', pix: 'PIX', dinheiro: 'Dinheiro',
+};
+
+const maxParcelas = (total: number): number => {
+  if (total < 50) return 1;
+  if (total < 100) return 2;
+  if (total < 200) return 3;
+  if (total < 500) return 6;
+  return 12;
+};
+
+const opcoesForma: { key: FormaPagamento; label: string; icon: React.ReactNode }[] = [
+  { key: 'debito',   label: 'Débito',   icon: <CreditCard size={18} /> },
+  { key: 'credito',  label: 'Crédito',  icon: <CreditCard size={18} /> },
+  { key: 'pix',      label: 'PIX',      icon: <Zap size={18} /> },
+  { key: 'dinheiro', label: 'Dinheiro', icon: <Banknote size={18} /> },
+];
+
 export default function Vendas() {
   const { setVendas, produtos } = useApp();
   const { user } = useAuth();
@@ -34,6 +53,8 @@ export default function Vendas() {
   const [imposto, setImposto] = useState<TipoImposto>('isento');
   const [comandaNum, setComanadaNum] = useState(novaComanda);
   const [mostrarResumo, setMostrarResumo] = useState(false);
+  const [formaPagamento, setFormaPagamento] = useState<FormaPagamento | null>(null);
+  const [parcelas, setParcelas] = useState(1);
 
   const produtosDisponiveis = produtos.filter(p => p.estoqueAtual > 0);
 
@@ -63,6 +84,7 @@ export default function Vendas() {
   const totalComanda = subtotalSemImposto + totalImpostos;
 
   const confirmarFechamento = () => {
+    if (!formaPagamento) return;
     setVendas(prev => [...prev, {
       id: String(Date.now()),
       comanda: comandaNum,
@@ -73,10 +95,15 @@ export default function Vendas() {
       data: new Date().toISOString().slice(0, 10),
       horario: new Date().toTimeString().slice(0, 5),
       status: 'fechada',
+      formaPagamento,
+      parcelas: formaPagamento === 'credito' ? parcelas : 1,
     }]);
-    toast(`Comanda #${comandaNum} fechada — R$${totalComanda.toFixed(2)}`);
+    const parcelasInfo = formaPagamento === 'credito' && parcelas > 1 ? ` · ${parcelas}x` : '';
+    toast(`Comanda #${comandaNum} fechada — R$${totalComanda.toFixed(2)} · ${formaLabel[formaPagamento]}${parcelasInfo}`);
     setItens([]);
     setMostrarResumo(false);
+    setFormaPagamento(null);
+    setParcelas(1);
     setComanadaNum(novaComanda());
   };
 
@@ -268,16 +295,56 @@ export default function Vendas() {
                   <span>R${totalComanda.toFixed(2)}</span>
                 </div>
               </div>
+
+              {/* Forma de pagamento */}
+              <div style={{ marginBottom: 6 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>
+                  Forma de pagamento
+                </div>
+                <div className="pagamento-grid">
+                  {opcoesForma.map(op => (
+                    <button
+                      key={op.key}
+                      className={`pagamento-btn${formaPagamento === op.key ? ' selected' : ''}`}
+                      onClick={() => { setFormaPagamento(op.key); if (op.key !== 'credito') setParcelas(1); }}
+                    >
+                      {op.icon}
+                      {op.label}
+                    </button>
+                  ))}
+                </div>
+                {formaPagamento === 'credito' && (
+                  <div style={{ marginTop: 10 }}>
+                    <div className="form-label" style={{ marginBottom: 4 }}>Parcelamento</div>
+                    <select
+                      className="form-control"
+                      value={parcelas}
+                      onChange={e => setParcelas(Number(e.target.value))}
+                    >
+                      {Array.from({ length: maxParcelas(totalComanda) }, (_, i) => i + 1).map(n => (
+                        <option key={n} value={n}>
+                          {n}x de R${(totalComanda / n).toFixed(2)}{n === 1 ? ' (à vista)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {!formaPagamento && (
+                  <div style={{ fontSize: 11, color: 'var(--red, #e53e3e)', marginTop: 8 }}>
+                    Selecione a forma de pagamento para confirmar.
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
           <div className="form-actions" style={{ marginTop: 14 }}>
             {mostrarResumo ? (
               <>
-                <button className="btn btn-primary" onClick={confirmarFechamento}>
+                <button className="btn btn-primary" onClick={confirmarFechamento} disabled={!formaPagamento}>
                   <CheckCircle size={14} /> Confirmar fechamento
                 </button>
-                <button className="btn btn-ghost" onClick={() => setMostrarResumo(false)}>
+                <button className="btn btn-ghost" onClick={() => { setMostrarResumo(false); setFormaPagamento(null); setParcelas(1); }}>
                   Voltar
                 </button>
               </>

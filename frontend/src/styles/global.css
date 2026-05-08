@@ -713,3 +713,36 @@ select.form-control { cursor: pointer; }
 .gap-8 { gap: 8px; }
 .gap-12 { gap: 12px; }
 .justify-between { justify-content: space-between; }
+
+/* ── Pagamento ── */
+.pagamento-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.pagamento-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.pagamento-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.pagamento-btn.selected {
+  border-color: var(--primary);
+  background: rgba(43, 127, 212, 0.1);
+  color: var(--primary);
+  font-weight: 600;
+}
