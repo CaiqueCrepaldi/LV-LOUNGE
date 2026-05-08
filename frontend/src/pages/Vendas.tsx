@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import type { ItemComanda, TipoImposto } from '../types';
+import { formatCurrency, parseCurrency } from '../utils/masks';
 
 let itemIdCounter = 100;
 
@@ -38,7 +39,7 @@ export default function Vendas() {
 
   const addItem = (nome?: string, precoVal?: number, produtoId?: string, impostoOverride?: TipoImposto) => {
     const desc = nome ?? descricao;
-    const val = precoVal ?? parseFloat(preco.replace(',', '.'));
+    const val = precoVal ?? parseCurrency(preco);
     const imp = impostoOverride ?? imposto;
     if (!desc || isNaN(val)) return;
     const subtotal = val * quantidade;
@@ -138,7 +139,14 @@ export default function Vendas() {
                 </div>
                 <div className="form-group">
                   <div className="form-label">Preço unitário (R$)</div>
-                  <input className="form-control" placeholder="0,00" value={preco} onChange={e => setPreco(e.target.value)} />
+                  <input
+                    className="form-control"
+                    placeholder="0,00"
+                    value={preco}
+                    onChange={e => setPreco(e.target.value.replace(/[^\d,]/g, ''))}
+                    onBlur={e => setPreco(formatCurrency(e.target.value))}
+                    inputMode="decimal"
+                  />
                 </div>
               </div>
               <div className="form-row form-row-2" style={{ marginBottom: 12 }}>

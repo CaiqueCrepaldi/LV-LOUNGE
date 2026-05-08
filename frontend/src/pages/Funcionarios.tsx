@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import type { User, UserRole, Turno } from '../types';
+import { maskCPF, maskPhone, formatCurrency, parseCurrency } from '../utils/masks';
 
 const cargoLabels: Record<UserRole, string> = {
   gerente: 'Gerente', barman: 'Barman', garcom: 'Garçom', cozinheiro: 'Cozinheiro',
@@ -20,32 +21,6 @@ const turnoBadge: Record<Turno, string> = {
   tarde: 'badge-amber', noite: 'badge-blue', madrugada: 'badge-gray',
 };
 
-// ── Máscaras ──────────────────────────────────────────────────────
-const maskCPF = (v: string) => {
-  const d = v.replace(/\D/g, '').slice(0, 11);
-  if (d.length <= 3) return d;
-  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
-  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
-  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
-};
-
-const maskPhone = (v: string) => {
-  const d = v.replace(/\D/g, '').slice(0, 11);
-  if (d.length === 0) return '';
-  if (d.length <= 2) return `(${d}`;
-  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
-  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
-};
-
-const formatSalario = (v: string) => {
-  const num = parseFloat(v.replace(/\./g, '').replace(',', '.'));
-  if (!v || isNaN(num)) return '';
-  return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-};
-
-const parseSalario = (v: string) =>
-  parseFloat(v.replace(/\./g, '').replace(',', '.')) || 0;
 
 const initForm = { nome: '', usuario: '', telefone: '', cpf: '', email: '', cargo: 'barman' as UserRole, turno: 'noite' as Turno, salario: '', senha: '' };
 
@@ -75,7 +50,7 @@ export default function Funcionarios() {
       return;
     }
     setFormError('');
-    const salario = parseSalario(form.salario);
+    const salario = parseCurrency(form.salario);
     if (editandoId) {
       setFuncionarios(prev => prev.map(f => {
         if (f.id !== editandoId) return f;
@@ -217,7 +192,7 @@ export default function Funcionarios() {
               placeholder="0,00"
               value={form.salario}
               onChange={e => change('salario', e.target.value.replace(/[^\d,]/g, ''))}
-              onBlur={e => change('salario', formatSalario(e.target.value))}
+              onBlur={e => change('salario', formatCurrency(e.target.value))}
               inputMode="decimal"
             />
           </div>

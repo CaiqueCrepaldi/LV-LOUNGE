@@ -3,6 +3,7 @@ import { Plus, Edit2, Trash2, Search } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useConfirm } from '../components/ConfirmModal';
 import type { Produto, TipoProduto, CategoriaProduto, VidaUtil, StatusEstoque } from '../types';
+import { formatCurrency, parseCurrency, maskPercent, parsePercent, displayCurrency } from '../utils/masks';
 
 const statusBadge: Record<StatusEstoque, string> = {
   normal: 'badge-green', atencao: 'badge-amber', critico: 'badge-red',
@@ -60,7 +61,7 @@ export default function Produtos() {
       setProdutos(prev => prev.map(p => p.id === editandoId ? {
         ...p, ...form,
         estoqueAtual, estoqueInicial: estoqueAtual, estoqueMinimo,
-        preco: Number(form.preco), imposto: Number(form.imposto),
+        preco: parseCurrency(form.preco), imposto: parsePercent(form.imposto),
         validade: form.validadeIndeterminada ? '' : form.validade,
         status: calcStatus(estoqueAtual, estoqueMinimo),
       } : p));
@@ -71,7 +72,7 @@ export default function Produtos() {
         codigo: form.codigo, nome: form.nome, tipo: form.tipo,
         categoria: form.categoria, marca: form.marca,
         estoqueAtual, estoqueInicial: estoqueAtual, estoqueMinimo,
-        preco: Number(form.preco), imposto: Number(form.imposto),
+        preco: parseCurrency(form.preco), imposto: parsePercent(form.imposto),
         validade: form.validadeIndeterminada ? '' : form.validade,
         vidaUtil: form.vidaUtil,
         status: calcStatus(estoqueAtual, estoqueMinimo),
@@ -86,7 +87,9 @@ export default function Produtos() {
     setForm({
       tipo: p.tipo, categoria: p.categoria, marca: p.marca, nome: p.nome,
       estoqueInicial: String(p.estoqueAtual), estoqueMinimo: String(p.estoqueMinimo),
-      codigo: p.codigo, preco: String(p.preco), imposto: String(p.imposto),
+      codigo: p.codigo,
+      preco: isNaN(p.preco) ? '' : p.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      imposto: String(isNaN(p.imposto) ? '' : p.imposto),
       validade: p.validade, vidaUtil: p.vidaUtil,
       validadeIndeterminada: !p.validade,
     });
@@ -155,11 +158,24 @@ export default function Produtos() {
           </div>
           <div className="form-group">
             <div className="form-label">Preço (R$) *</div>
-            <input className="form-control" placeholder="0,00" value={form.preco} onChange={e => change('preco', e.target.value)} />
+            <input
+              className="form-control"
+              placeholder="0,00"
+              value={form.preco}
+              onChange={e => change('preco', e.target.value.replace(/[^\d,]/g, ''))}
+              onBlur={e => change('preco', formatCurrency(e.target.value))}
+              inputMode="decimal"
+            />
           </div>
           <div className="form-group">
             <div className="form-label">Imposto (%) *</div>
-            <input className="form-control" placeholder="0" value={form.imposto} onChange={e => change('imposto', e.target.value)} />
+            <input
+              className="form-control"
+              placeholder="0"
+              value={form.imposto}
+              onChange={e => change('imposto', maskPercent(e.target.value))}
+              inputMode="decimal"
+            />
           </div>
         </div>
         <div className="form-row form-row-2" style={{ marginBottom: 12 }}>
@@ -230,7 +246,7 @@ export default function Produtos() {
                   <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                     {p.validade ? new Date(p.validade + 'T12:00:00').toLocaleDateString('pt-BR') : 'Indeterminada'}
                   </td>
-                  <td>R${p.preco.toFixed(2)} / {p.imposto}%</td>
+                  <td>R${displayCurrency(p.preco)} / {isNaN(p.imposto) ? 0 : p.imposto}%</td>
                   <td><span className={`badge ${p.tipo === 'comercializado' ? 'badge-blue' : 'badge-gray'}`}>
                     {p.tipo === 'comercializado' ? 'Comercializado' : 'Ingrediente'}
                   </span></td>
