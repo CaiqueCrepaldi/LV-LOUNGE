@@ -12,7 +12,7 @@ export interface User {
   cargo: UserRole;
   turno?: Turno;
   salario: number;
-  senha: string;
+  senha?: string;
   ativo: boolean;
 }
 

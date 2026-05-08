@@ -3,8 +3,8 @@ import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const [usuario, setUsuario] = useState('bianca.gerente');
-  const [senha, setSenha] = useState('12345678');
+  const [usuario, setUsuario] = useState('');
+  const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
 
   const handleLogin = () => {
@@ -74,7 +74,7 @@ export default function LoginPage() {
         </div>
 
         <div style={{ marginTop: 20, padding: '10px 12px', background: 'var(--blue-xpale)', borderRadius: 8, fontSize: 11, color: 'var(--text-muted)' }}>
-          <strong style={{ color: 'var(--blue-dark)' }}>Demo:</strong> usuario <code>bianca.gerente</code> · senha <code>12345678</code>
+          <strong style={{ color: 'var(--blue-dark)' }}>Demo:</strong> solicite o usuário e senha ao gerente responsável.
         </div>
       </div>
     </div>

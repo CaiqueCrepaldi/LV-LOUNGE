@@ -72,7 +72,7 @@ export default function Funcionarios() {
       setFuncionarios(prev => prev.map(f => {
         if (f.id !== editandoId) return f;
         const updated = { ...f, ...form, salario };
-        if (!form.senha) updated.senha = f.senha;
+        if (!form.senha) updated.senha = f.senha ?? '';
         return updated;
       }));
       setEditandoId(null);

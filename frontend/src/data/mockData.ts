@@ -6,24 +6,24 @@ import type {
 
 export const mockUsers: User[] = [
   {
-    id: '1', usuario: 'bianca.gerente', nome: 'Bianca Almeida', telefone: '(11) 99999-0001',
-    cpf: '000.000.000-01', email: 'bianca@lvlounge.com', cargo: 'gerente', turno: 'tarde',
-    salario: 5000, senha: '12345678', ativo: true,
+    id: '1', usuario: 'bianca.gerente', nome: 'Bianca A.', telefone: '(00) 00000-0001',
+    cpf: '000.000.000-00', email: 'gerente@demo.local', cargo: 'gerente', turno: 'tarde',
+    salario: 0, ativo: true,
   },
   {
-    id: '2', usuario: 'roberto', nome: 'Roberto Silva', telefone: '11931464662',
-    cpf: '000.000.000-00', email: 'rob@gmail.com', cargo: 'barman', turno: 'noite',
-    salario: 1900, senha: '12345678', ativo: true,
+    id: '2', usuario: 'roberto', nome: 'Roberto S.', telefone: '(00) 00000-0002',
+    cpf: '000.000.000-00', email: 'barman@demo.local', cargo: 'barman', turno: 'noite',
+    salario: 0, ativo: true,
   },
   {
-    id: '3', usuario: 'maria', nome: 'Maria Santos', telefone: '11987654321',
-    cpf: '111.111.111-11', email: 'maria@gmail.com', cargo: 'garcom', turno: 'noite',
-    salario: 1700, senha: '12345678', ativo: true,
+    id: '3', usuario: 'maria', nome: 'Maria S.', telefone: '(00) 00000-0003',
+    cpf: '000.000.000-00', email: 'garcom@demo.local', cargo: 'garcom', turno: 'noite',
+    salario: 0, ativo: true,
   },
   {
-    id: '4', usuario: 'ana', nome: 'Ana Oliveira', telefone: '11976543210',
-    cpf: '222.222.222-22', email: 'ana@gmail.com', cargo: 'cozinheiro', turno: 'tarde',
-    salario: 2100, senha: '12345678', ativo: true,
+    id: '4', usuario: 'ana', nome: 'Ana O.', telefone: '(00) 00000-0004',
+    cpf: '000.000.000-00', email: 'cozinheiro@demo.local', cargo: 'cozinheiro', turno: 'tarde',
+    salario: 0, ativo: true,
   },
 ];
 
@@ -72,16 +72,16 @@ export const mockProdutos: Produto[] = [
 
 export const mockFornecedores: Fornecedor[] = [
   {
-    id: '1', nome: 'Adega JR', cnpj: '00.000.000/0001-00', telefone: '(11) 0000-0000',
-    logradouro: 'Av. Armando Salles', numero: '100', cep: '08780-000',
-    cidade: 'Mogi das Cruzes', estado: 'SP',
-    historicoTransacao: 'Ativo desde 2023', produtoFornecido: 'Ballena',
+    id: '1', nome: 'Fornecedor Demo A', cnpj: '00.000.000/0001-00', telefone: '(00) 0000-0000',
+    logradouro: 'Rua Exemplo', numero: '100', cep: '00000-000',
+    cidade: 'Cidade Demo', estado: 'SP',
+    historicoTransacao: 'Ativo desde 2023', produtoFornecido: 'Produto A',
   },
   {
-    id: '2', nome: 'Distribuidora RedBull SP', cnpj: '11.111.111/0001-11', telefone: '(11) 1111-1111',
-    logradouro: 'Rua das Flores', numero: '200', cep: '01310-100',
-    cidade: 'São Paulo', estado: 'SP',
-    historicoTransacao: 'Ativo desde 2022', produtoFornecido: 'Redbull',
+    id: '2', nome: 'Fornecedor Demo B', cnpj: '00.000.000/0002-00', telefone: '(00) 0000-0001',
+    logradouro: 'Av. Exemplo', numero: '200', cep: '00000-001',
+    cidade: 'Cidade Demo', estado: 'SP',
+    historicoTransacao: 'Ativo desde 2022', produtoFornecido: 'Produto B',
   },
 ];
 
