@@ -35,6 +35,12 @@ const maxParcelas = (total: number): number => {
   return 12;
 };
 
+// Acréscimo (%) por número de parcelas no crédito
+const JUROS_PARCELA: Record<number, number> = {
+  1: 0, 2: 2, 3: 4, 4: 6, 5: 8, 6: 10,
+  7: 13, 8: 16, 9: 19, 10: 22, 11: 25, 12: 28,
+};
+
 const opcoesForma: { key: FormaPagamento; label: string; icon: React.ReactNode }[] = [
   { key: 'debito',   label: 'Débito',   icon: <CreditCard size={18} /> },
   { key: 'credito',  label: 'Crédito',  icon: <CreditCard size={18} /> },
@@ -83,6 +89,10 @@ export default function Vendas() {
   const totalImpostos = itens.reduce((s, i) => s + i.precoUnitario * i.quantidade * TAX_RATE[i.imposto], 0);
   const totalComanda = subtotalSemImposto + totalImpostos;
 
+  const juros = formaPagamento === 'credito' && parcelas > 1 ? (JUROS_PARCELA[parcelas] ?? 0) : 0;
+  const acrescimo = totalComanda * juros / 100;
+  const totalFinal = totalComanda + acrescimo;
+
   const confirmarFechamento = () => {
     if (!formaPagamento) return;
     setVendas(prev => [...prev, {
@@ -91,15 +101,15 @@ export default function Vendas() {
       funcionarioId: user?.id ?? '',
       funcionarioNome: user?.nome ?? '',
       itens,
-      total: totalComanda,
+      total: totalFinal,
       data: new Date().toISOString().slice(0, 10),
       horario: new Date().toTimeString().slice(0, 5),
       status: 'fechada',
       formaPagamento,
       parcelas: formaPagamento === 'credito' ? parcelas : 1,
     }]);
-    const parcelasInfo = formaPagamento === 'credito' && parcelas > 1 ? ` · ${parcelas}x` : '';
-    toast(`Comanda #${comandaNum} fechada — R$${totalComanda.toFixed(2)} · ${formaLabel[formaPagamento]}${parcelasInfo}`);
+    const parcelasInfo = formaPagamento === 'credito' && parcelas > 1 ? ` · ${parcelas}x (+${juros}%)` : '';
+    toast(`Comanda #${comandaNum} fechada — R$${totalFinal.toFixed(2)} · ${formaLabel[formaPagamento]}${parcelasInfo}`);
     setItens([]);
     setMostrarResumo(false);
     setFormaPagamento(null);
@@ -290,9 +300,15 @@ export default function Vendas() {
                   <span>Impostos</span>
                   <span>R${totalImpostos.toFixed(2)}</span>
                 </div>
+                {juros > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--amber, #d97706)' }}>
+                    <span>Acréscimo ({juros}% — crédito {parcelas}x)</span>
+                    <span>+R${acrescimo.toFixed(2)}</span>
+                  </div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, color: 'var(--text)', marginTop: 6, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
                   <span>Total a cobrar</span>
-                  <span>R${totalComanda.toFixed(2)}</span>
+                  <span>R${totalFinal.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -321,11 +337,17 @@ export default function Vendas() {
                       value={parcelas}
                       onChange={e => setParcelas(Number(e.target.value))}
                     >
-                      {Array.from({ length: maxParcelas(totalComanda) }, (_, i) => i + 1).map(n => (
-                        <option key={n} value={n}>
-                          {n}x de R${(totalComanda / n).toFixed(2)}{n === 1 ? ' (à vista)' : ''}
-                        </option>
-                      ))}
+                      {Array.from({ length: maxParcelas(totalComanda) }, (_, i) => i + 1).map(n => {
+                        const pct = JUROS_PARCELA[n] ?? 0;
+                        const totalN = totalComanda * (1 + pct / 100);
+                        const valorParcela = totalN / n;
+                        const sufixo = pct === 0 ? ' — sem juros' : ` — +${pct}% (total R$${totalN.toFixed(2)})`;
+                        return (
+                          <option key={n} value={n}>
+                            {n}x de R${valorParcela.toFixed(2)}{sufixo}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
                 )}
