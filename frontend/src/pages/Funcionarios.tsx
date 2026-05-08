@@ -200,7 +200,7 @@ export default function Funcionarios() {
             {errors.email && fieldError(errors.email)}
           </div>
           <div className="form-group">
-            <div className="form-label">Cargo / Nível de acesso</div>
+            <div className="form-label">Cargo / Nível de acesso *</div>
             <select className="form-control" value={form.cargo} onChange={e => change('cargo', e.target.value)}>
               <option value="barman">Barman</option>
               <option value="garcom">Garçom</option>
@@ -209,7 +209,7 @@ export default function Funcionarios() {
             </select>
           </div>
           <div className="form-group">
-            <div className="form-label">Turno</div>
+            <div className="form-label">Turno *</div>
             <select className="form-control" value={form.turno} onChange={e => change('turno', e.target.value)}>
               <option value="tarde">Tarde (12:00–18:00)</option>
               <option value="noite">Noite (18:00–00:00)</option>

@@ -120,14 +120,14 @@ export default function Produtos() {
         <div className="card-title">{editandoId ? 'Editar produto' : 'Novo produto'}</div>
         <div className="form-row form-row-3" style={{ marginBottom: 12 }}>
           <div className="form-group">
-            <div className="form-label">Tipo de produto</div>
+            <div className="form-label">Tipo de produto *</div>
             <select className="form-control" value={form.tipo} onChange={e => change('tipo', e.target.value)}>
               <option value="comercializado">Comercializado</option>
               <option value="ingrediente">Ingrediente</option>
             </select>
           </div>
           <div className="form-group">
-            <div className="form-label">Categoria</div>
+            <div className="form-label">Categoria *</div>
             <select className="form-control" value={form.categoria} onChange={e => change('categoria', e.target.value)}>
               <option value="bebida">Bebida</option>
               <option value="alimento">Alimento</option>
@@ -201,7 +201,7 @@ export default function Produtos() {
             />
           </div>
           <div className="form-group">
-            <div className="form-label">Vida útil (tipo de alerta)</div>
+            <div className="form-label">Vida útil (tipo de alerta) *</div>
             <select className="form-control" value={form.vidaUtil} onChange={e => change('vidaUtil', e.target.value)}>
               <option value="perecivel">Perecível (alerta 1 semana antes)</option>
               <option value="nao_perecivel">Não perecível (alerta 1 mês antes)</option>

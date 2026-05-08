@@ -151,6 +151,7 @@ export default function Dashboard() {
                 <th>Total</th>
                 <th>Data</th>
                 <th>Horário</th>
+                <th>Pagamento</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -164,6 +165,13 @@ export default function Dashboard() {
                   <td style={{ color: 'var(--text-muted)', fontSize: 11 }}>{new Date(v.data + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
                   <td style={{ color: 'var(--text-muted)' }}>{v.horario}</td>
                   <td>
+                    {v.formaPagamento ? (
+                      <span className={`badge ${v.formaPagamento === 'pix' ? 'badge-green' : v.formaPagamento === 'credito' ? 'badge-amber' : v.formaPagamento === 'debito' ? 'badge-blue' : 'badge-gray'}`}>
+                        {v.formaPagamento === 'debito' ? 'Débito' : v.formaPagamento === 'credito' ? `Crédito${v.parcelas && v.parcelas > 1 ? ` ${v.parcelas}x` : ''}` : v.formaPagamento === 'pix' ? 'PIX' : 'Dinheiro'}
+                      </span>
+                    ) : <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>}
+                  </td>
+                  <td>
                     <span className={`badge ${v.status === 'fechada' ? 'badge-green' : v.status === 'cancelada' ? 'badge-red' : 'badge-amber'}`}>
                       {v.status === 'fechada' ? 'Fechada' : v.status === 'cancelada' ? 'Cancelada' : 'Aberta'}
                     </span>
@@ -171,7 +179,7 @@ export default function Dashboard() {
                 </tr>
               ))}
               {vendas.length === 0 && (
-                <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '32px 0' }}>Nenhuma venda registrada</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '32px 0' }}>Nenhuma venda registrada</td></tr>
               )}
             </tbody>
           </table>

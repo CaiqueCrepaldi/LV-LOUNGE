@@ -58,6 +58,7 @@ export default function Fornecedores() {
     if (!form.cidade.trim()) faltando.push('Cidade');
     if (!form.estado) faltando.push('Estado');
     if (!form.produtoFornecido.trim()) faltando.push('Produto fornecido');
+    if (!form.historicoTransacao.trim()) faltando.push('Histórico de transação');
     if (faltando.length > 0) {
       setFormError(`Campos obrigatórios: ${faltando.join(', ')}.`);
       return;
@@ -232,7 +233,7 @@ export default function Fornecedores() {
         {/* Linha 4: Histórico + botões */}
         <div className="form-row form-row-3">
           <div className="form-group" style={{ gridColumn: '1 / span 2' }}>
-            <div className="form-label">Histórico de transação</div>
+            <div className="form-label">Histórico de transação *</div>
             <input
               className="form-control"
               placeholder="Ex: Ativo desde 2023"

@@ -11,19 +11,29 @@ const statusLabel: Record<StatusEstoque, string> = {
   normal: 'Normal', atencao: 'Atenção', critico: 'Crítico',
 };
 
-const initForm = { produtoId: '', categoria: 'bebida', quantidade: '', temperatura: '', horario: '', data: '' };
+const makeInitForm = () => ({
+  produtoId: '', categoria: 'bebida', quantidade: '', temperatura: '',
+  horario: new Date().toTimeString().slice(0, 5),
+  data: new Date().toISOString().slice(0, 10),
+});
 
 export default function Geladeira() {
   const { geladeira, setGeladeira, produtos } = useApp();
   const { confirm, modal } = useConfirm();
-  const [form, setForm] = useState(initForm);
+  const [form, setForm] = useState(makeInitForm);
   const [formError, setFormError] = useState('');
 
   const handleChange = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
 
   const handleSubmit = () => {
-    if (!form.produtoId || !form.quantidade || form.temperatura === '') {
-      setFormError('Produto, quantidade e temperatura são obrigatórios.');
+    const faltando: string[] = [];
+    if (!form.produtoId) faltando.push('Produto');
+    if (!form.quantidade) faltando.push('Quantidade');
+    if (form.temperatura === '') faltando.push('Temperatura');
+    if (!form.horario) faltando.push('Horário');
+    if (!form.data) faltando.push('Data');
+    if (faltando.length > 0) {
+      setFormError(`Campos obrigatórios: ${faltando.join(', ')}.`);
       return;
     }
     setFormError('');
@@ -35,13 +45,13 @@ export default function Geladeira() {
       categoria: form.categoria as ItemGeladeira['categoria'],
       quantidade: Number(form.quantidade),
       temperatura: Number(form.temperatura),
-      horario: form.horario || new Date().toTimeString().slice(0, 5),
-      data: form.data || new Date().toLocaleDateString('pt-BR'),
+      horario: form.horario,
+      data: form.data,
       validade: produto?.validade ?? '',
       status: 'normal',
     };
     setGeladeira(prev => [...prev, novo]);
-    setForm(initForm);
+    setForm(makeInitForm());
   };
 
   const handleDelete = async (id: string) => {
@@ -71,7 +81,7 @@ export default function Geladeira() {
             </select>
           </div>
           <div className="form-group">
-            <div className="form-label">Categoria</div>
+            <div className="form-label">Categoria *</div>
             <select className="form-control" value={form.categoria} onChange={e => handleChange('categoria', e.target.value)}>
               <option value="bebida">Bebida</option>
               <option value="alimento">Alimento</option>
@@ -89,11 +99,11 @@ export default function Geladeira() {
             <input className="form-control" type="number" placeholder="-5" value={form.temperatura} onChange={e => handleChange('temperatura', e.target.value)} />
           </div>
           <div className="form-group">
-            <div className="form-label">Horário</div>
+            <div className="form-label">Horário *</div>
             <input className="form-control" type="time" value={form.horario} onChange={e => handleChange('horario', e.target.value)} />
           </div>
           <div className="form-group">
-            <div className="form-label">Data</div>
+            <div className="form-label">Data *</div>
             <input className="form-control" type="date" value={form.data} onChange={e => handleChange('data', e.target.value)} />
           </div>
         </div>
