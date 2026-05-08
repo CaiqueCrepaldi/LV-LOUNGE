@@ -4,6 +4,25 @@ Sistema de gerenciamento de estoque, vendas, funcionários e fornecedores da cas
 
 ---
 
+## Deploy (GitHub Pages)
+
+O frontend está publicado em:
+
+**https://caiquecrepaldi.github.io/LV-LOUNGE/**
+
+Para atualizar o deploy manualmente:
+
+```bash
+cd frontend
+npm run build
+npx gh-pages -d dist
+```
+
+> O comando acima requer o pacote `gh-pages` (`npm install -D gh-pages`).
+> Certifique-se de que o repositório está com GitHub Pages configurado para a branch `gh-pages`.
+
+---
+
 ## Como rodar
 
 ### Pré-requisitos
