@@ -4,7 +4,7 @@ import { useApp } from '../context/AppContext';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import type { Fornecedor } from '../types';
-import { maskCNPJ, maskPhone, maskCEP } from '../utils/masks';
+import { maskCNPJ, maskPhone, maskCEP, validateCNPJ, validatePhone, validateCEP } from '../utils/masks';
 
 const ESTADOS = [
   'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG',
@@ -17,16 +17,35 @@ const initForm = {
   historicoTransacao: '', produtoFornecido: '',
 };
 
+const initErrors = { cnpj: '', telefone: '', cep: '' };
+
+const fieldError = (msg: string) => (
+  <div style={{ fontSize: 11, color: 'var(--red, #e53e3e)', marginTop: 3 }}>{msg}</div>
+);
+
 export default function Fornecedores() {
   const { fornecedores, setFornecedores } = useApp();
   const toast = useToast();
   const { confirm, modal } = useConfirm();
   const [form, setForm] = useState(initForm);
   const [formError, setFormError] = useState('');
+  const [errors, setErrors] = useState(initErrors);
   const [busca, setBusca] = useState('');
   const [editandoId, setEditandoId] = useState<string | null>(null);
 
-  const change = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
+  const change = (k: string, v: string) => {
+    setForm(p => ({ ...p, [k]: v }));
+    if (k in errors) setErrors(p => ({ ...p, [k]: '' }));
+  };
+
+  const blurValidate = (k: keyof typeof initErrors, v: string) => {
+    if (!v) return;
+    let msg = '';
+    if (k === 'cnpj' && !validateCNPJ(v)) msg = 'CNPJ inválido.';
+    if (k === 'telefone' && !validatePhone(v)) msg = 'Telefone inválido (mínimo 10 dígitos).';
+    if (k === 'cep' && !validateCEP(v)) msg = 'CEP inválido (deve ter 8 dígitos).';
+    setErrors(p => ({ ...p, [k]: msg }));
+  };
 
   const handleSubmit = () => {
     const faltando: string[] = [];
@@ -43,6 +62,14 @@ export default function Fornecedores() {
       setFormError(`Campos obrigatórios: ${faltando.join(', ')}.`);
       return;
     }
+    const invalidos: string[] = [];
+    if (!validateCNPJ(form.cnpj)) invalidos.push('CNPJ inválido');
+    if (!validatePhone(form.telefone)) invalidos.push('Telefone inválido');
+    if (!validateCEP(form.cep)) invalidos.push('CEP inválido');
+    if (invalidos.length > 0) {
+      setFormError(invalidos.join(' · ') + '.');
+      return;
+    }
     setFormError('');
     if (editandoId) {
       setFornecedores(prev => prev.map(f => f.id === editandoId ? { ...f, ...form } : f));
@@ -54,10 +81,12 @@ export default function Fornecedores() {
       toast('Fornecedor cadastrado com sucesso.');
     }
     setForm(initForm);
+    setErrors(initErrors);
   };
 
   const handleEdit = (f: Fornecedor) => {
     setFormError('');
+    setErrors(initErrors);
     setForm({
       nome: f.nome, cnpj: f.cnpj, telefone: f.telefone,
       logradouro: f.logradouro, numero: f.numero, cep: f.cep,
@@ -113,22 +142,26 @@ export default function Fornecedores() {
           <div className="form-group">
             <div className="form-label">CNPJ *</div>
             <input
-              className="form-control"
+              className={`form-control${errors.cnpj ? ' input-invalid' : ''}`}
               placeholder="00.000.000/0001-00"
               value={form.cnpj}
               onChange={e => change('cnpj', maskCNPJ(e.target.value))}
+              onBlur={e => blurValidate('cnpj', e.target.value)}
               inputMode="numeric"
             />
+            {errors.cnpj && fieldError(errors.cnpj)}
           </div>
           <div className="form-group">
             <div className="form-label">Telefone *</div>
             <input
-              className="form-control"
+              className={`form-control${errors.telefone ? ' input-invalid' : ''}`}
               placeholder="(11) 99999-9999"
               value={form.telefone}
               onChange={e => change('telefone', maskPhone(e.target.value))}
+              onBlur={e => blurValidate('telefone', e.target.value)}
               inputMode="numeric"
             />
+            {errors.telefone && fieldError(errors.telefone)}
           </div>
         </div>
 
@@ -156,12 +189,14 @@ export default function Fornecedores() {
           <div className="form-group">
             <div className="form-label">CEP *</div>
             <input
-              className="form-control"
+              className={`form-control${errors.cep ? ' input-invalid' : ''}`}
               placeholder="00000-000"
               value={form.cep}
               onChange={e => change('cep', maskCEP(e.target.value))}
+              onBlur={e => blurValidate('cep', e.target.value)}
               inputMode="numeric"
             />
+            {errors.cep && fieldError(errors.cep)}
           </div>
         </div>
 
@@ -211,7 +246,7 @@ export default function Fornecedores() {
                 <Plus size={14} /> {editandoId ? 'Salvar' : 'Cadastrar fornecedor'}
               </button>
               {editandoId && (
-                <button className="btn btn-ghost" onClick={() => { setEditandoId(null); setForm(initForm); setFormError(''); }}>
+                <button className="btn btn-ghost" onClick={() => { setEditandoId(null); setForm(initForm); setFormError(''); setErrors(initErrors); }}>
                   Cancelar
                 </button>
               )}

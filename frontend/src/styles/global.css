@@ -396,6 +396,8 @@ a { text-decoration: none; color: inherit; }
   width: 100%;
 }
 .form-control:focus { border-color: var(--blue); }
+.form-control.input-invalid { border-color: var(--red, #e53e3e); }
+.form-control.input-invalid:focus { border-color: var(--red, #e53e3e); }
 select.form-control { cursor: pointer; }
 
 .form-row { display: grid; gap: 12px; }

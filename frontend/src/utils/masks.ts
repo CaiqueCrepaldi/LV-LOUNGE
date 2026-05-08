@@ -51,3 +51,45 @@ export const maskPercent = (v: string): string =>
 
 export const parsePercent = (v: string): number =>
   parseFloat(v.replace(',', '.')) || 0;
+
+// ── Validações ────────────────────────────────────────────────────
+
+export const validateCPF = (cpf: string): boolean => {
+  const d = cpf.replace(/\D/g, '');
+  if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += +d[i] * (10 - i);
+  let r = (sum * 10) % 11;
+  if (r === 10 || r === 11) r = 0;
+  if (r !== +d[9]) return false;
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += +d[i] * (11 - i);
+  r = (sum * 10) % 11;
+  if (r === 10 || r === 11) r = 0;
+  return r === +d[10];
+};
+
+export const validateCNPJ = (cnpj: string): boolean => {
+  const d = cnpj.replace(/\D/g, '');
+  if (d.length !== 14 || /^(\d)\1{13}$/.test(d)) return false;
+  const calc = (s: string, n: number) => {
+    let sum = 0, pos = n - 7;
+    for (let i = n; i >= 1; i--) {
+      sum += +s[n - i] * pos--;
+      if (pos < 2) pos = 9;
+    }
+    return sum % 11 < 2 ? 0 : 11 - (sum % 11);
+  };
+  return calc(d, 12) === +d[12] && calc(d, 13) === +d[13];
+};
+
+export const validateEmail = (email: string): boolean =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
+
+export const validatePhone = (phone: string): boolean => {
+  const d = phone.replace(/\D/g, '');
+  return d.length === 10 || d.length === 11;
+};
+
+export const validateCEP = (cep: string): boolean =>
+  cep.replace(/\D/g, '').length === 8;

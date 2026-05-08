@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import type { User, UserRole, Turno } from '../types';
-import { maskCPF, maskPhone, formatCurrency, parseCurrency } from '../utils/masks';
+import { maskCPF, maskPhone, formatCurrency, parseCurrency, validateCPF, validateEmail, validatePhone } from '../utils/masks';
 
 const cargoLabels: Record<UserRole, string> = {
   gerente: 'Gerente', barman: 'Barman', garcom: 'Garçom', cozinheiro: 'Cozinheiro',
@@ -21,8 +21,12 @@ const turnoBadge: Record<Turno, string> = {
   tarde: 'badge-amber', noite: 'badge-blue', madrugada: 'badge-gray',
 };
 
-
 const initForm = { nome: '', usuario: '', telefone: '', cpf: '', email: '', cargo: 'barman' as UserRole, turno: 'noite' as Turno, salario: '', senha: '' };
+const initErrors = { telefone: '', cpf: '', email: '' };
+
+const fieldError = (msg: string) => (
+  <div style={{ fontSize: 11, color: 'var(--red, #e53e3e)', marginTop: 3 }}>{msg}</div>
+);
 
 export default function Funcionarios() {
   const { funcionarios, setFuncionarios } = useApp();
@@ -31,10 +35,23 @@ export default function Funcionarios() {
   const { confirm, modal } = useConfirm();
   const [form, setForm] = useState(initForm);
   const [formError, setFormError] = useState('');
+  const [errors, setErrors] = useState(initErrors);
   const [busca, setBusca] = useState('');
   const [editandoId, setEditandoId] = useState<string | null>(null);
 
-  const change = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
+  const change = (k: string, v: string) => {
+    setForm(p => ({ ...p, [k]: v }));
+    if (k in errors) setErrors(p => ({ ...p, [k]: '' }));
+  };
+
+  const blurValidate = (k: keyof typeof initErrors, v: string) => {
+    if (!v) return;
+    let msg = '';
+    if (k === 'cpf' && !validateCPF(v)) msg = 'CPF inválido.';
+    if (k === 'email' && !validateEmail(v)) msg = 'E-mail inválido.';
+    if (k === 'telefone' && !validatePhone(v)) msg = 'Telefone inválido (mínimo 10 dígitos).';
+    setErrors(p => ({ ...p, [k]: msg }));
+  };
 
   const handleSubmit = () => {
     const faltando: string[] = [];
@@ -47,6 +64,14 @@ export default function Funcionarios() {
     if (!editandoId && !form.senha.trim()) faltando.push('Senha');
     if (faltando.length > 0) {
       setFormError(`Campos obrigatórios: ${faltando.join(', ')}.`);
+      return;
+    }
+    const invalidos: string[] = [];
+    if (!validatePhone(form.telefone)) invalidos.push('Telefone inválido');
+    if (!validateCPF(form.cpf)) invalidos.push('CPF inválido');
+    if (!validateEmail(form.email)) invalidos.push('E-mail inválido');
+    if (invalidos.length > 0) {
+      setFormError(invalidos.join(' · ') + '.');
       return;
     }
     setFormError('');
@@ -66,10 +91,12 @@ export default function Funcionarios() {
       toast('Funcionário cadastrado com sucesso.');
     }
     setForm(initForm);
+    setErrors(initErrors);
   };
 
   const handleEdit = (f: User) => {
     setFormError('');
+    setErrors(initErrors);
     setForm({
       nome: f.nome,
       usuario: f.usuario,
@@ -137,34 +164,40 @@ export default function Funcionarios() {
           <div className="form-group">
             <div className="form-label">Telefone *</div>
             <input
-              className="form-control"
+              className={`form-control${errors.telefone ? ' input-invalid' : ''}`}
               placeholder="(11) 99999-9999"
               value={form.telefone}
               onChange={e => change('telefone', maskPhone(e.target.value))}
+              onBlur={e => blurValidate('telefone', e.target.value)}
               inputMode="numeric"
             />
+            {errors.telefone && fieldError(errors.telefone)}
           </div>
         </div>
         <div className="form-row form-row-3" style={{ marginBottom: 12 }}>
           <div className="form-group">
             <div className="form-label">CPF *</div>
             <input
-              className="form-control"
+              className={`form-control${errors.cpf ? ' input-invalid' : ''}`}
               placeholder="000.000.000-00"
               value={form.cpf}
               onChange={e => change('cpf', maskCPF(e.target.value))}
+              onBlur={e => blurValidate('cpf', e.target.value)}
               inputMode="numeric"
             />
+            {errors.cpf && fieldError(errors.cpf)}
           </div>
           <div className="form-group">
             <div className="form-label">E-mail *</div>
             <input
-              className="form-control"
+              className={`form-control${errors.email ? ' input-invalid' : ''}`}
               type="email"
               placeholder="email@email.com"
               value={form.email}
               onChange={e => change('email', e.target.value)}
+              onBlur={e => blurValidate('email', e.target.value)}
             />
+            {errors.email && fieldError(errors.email)}
           </div>
           <div className="form-group">
             <div className="form-label">Cargo / Nível de acesso</div>
@@ -212,7 +245,7 @@ export default function Funcionarios() {
                 <Plus size={14} /> {editandoId ? 'Salvar' : 'Criar funcionário'}
               </button>
               {editandoId && (
-                <button className="btn btn-ghost" onClick={() => { setEditandoId(null); setForm(initForm); setFormError(''); }}>Cancelar</button>
+                <button className="btn btn-ghost" onClick={() => { setEditandoId(null); setForm(initForm); setFormError(''); setErrors(initErrors); }}>Cancelar</button>
               )}
             </div>
           </div>
