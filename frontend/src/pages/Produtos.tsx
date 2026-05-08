@@ -20,6 +20,7 @@ const initForm = {
   imposto: '',
   validade: '',
   vidaUtil: 'nao_perecivel' as VidaUtil,
+  validadeIndeterminada: false,
 };
 
 const calcStatus = (atual: number, minimo: number): StatusEstoque => {
@@ -47,7 +48,7 @@ export default function Produtos() {
     if (form.estoqueMinimo === '') faltando.push('Estoque mínimo');
     if (form.preco === '') faltando.push('Preço');
     if (form.imposto === '') faltando.push('Imposto');
-    if (!form.validade) faltando.push('Validade');
+    if (!form.validadeIndeterminada && !form.validade) faltando.push('Validade');
     if (faltando.length > 0) {
       setFormError(`Campos obrigatórios: ${faltando.join(', ')}.`);
       return;
@@ -60,6 +61,7 @@ export default function Produtos() {
         ...p, ...form,
         estoqueAtual, estoqueInicial: estoqueAtual, estoqueMinimo,
         preco: Number(form.preco), imposto: Number(form.imposto),
+        validade: form.validadeIndeterminada ? '' : form.validade,
         status: calcStatus(estoqueAtual, estoqueMinimo),
       } : p));
       setEditandoId(null);
@@ -70,7 +72,8 @@ export default function Produtos() {
         categoria: form.categoria, marca: form.marca,
         estoqueAtual, estoqueInicial: estoqueAtual, estoqueMinimo,
         preco: Number(form.preco), imposto: Number(form.imposto),
-        validade: form.validade, vidaUtil: form.vidaUtil,
+        validade: form.validadeIndeterminada ? '' : form.validade,
+        vidaUtil: form.vidaUtil,
         status: calcStatus(estoqueAtual, estoqueMinimo),
       };
       setProdutos(prev => [...prev, novo]);
@@ -85,6 +88,7 @@ export default function Produtos() {
       estoqueInicial: String(p.estoqueAtual), estoqueMinimo: String(p.estoqueMinimo),
       codigo: p.codigo, preco: String(p.preco), imposto: String(p.imposto),
       validade: p.validade, vidaUtil: p.vidaUtil,
+      validadeIndeterminada: !p.validade,
     });
     setEditandoId(p.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -160,8 +164,25 @@ export default function Produtos() {
         </div>
         <div className="form-row form-row-2" style={{ marginBottom: 12 }}>
           <div className="form-group">
-            <div className="form-label">Validade *</div>
-            <input className="form-control" type="date" value={form.validade} onChange={e => change('validade', e.target.value)} />
+            <div className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span>Validade {!form.validadeIndeterminada && '*'}</span>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontWeight: 400, fontSize: 11, cursor: 'pointer', color: 'var(--text-muted)' }}>
+                <input
+                  type="checkbox"
+                  checked={form.validadeIndeterminada}
+                  onChange={e => setForm(p => ({ ...p, validadeIndeterminada: e.target.checked, validade: e.target.checked ? '' : p.validade }))}
+                />
+                Validade indeterminada
+              </label>
+            </div>
+            <input
+              className="form-control"
+              type="date"
+              value={form.validade}
+              onChange={e => change('validade', e.target.value)}
+              disabled={form.validadeIndeterminada}
+              style={form.validadeIndeterminada ? { opacity: 0.4, pointerEvents: 'none' } : {}}
+            />
           </div>
           <div className="form-group">
             <div className="form-label">Vida útil (tipo de alerta)</div>
@@ -207,7 +228,7 @@ export default function Produtos() {
                   <td style={{ fontWeight: 500 }}>{p.nome}</td>
                   <td>{p.estoqueAtual} / {p.estoqueMinimo}</td>
                   <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                    {p.validade ? new Date(p.validade).toLocaleDateString('pt-BR') : '—'}
+                    {p.validade ? new Date(p.validade + 'T12:00:00').toLocaleDateString('pt-BR') : 'Indeterminada'}
                   </td>
                   <td>R${p.preco.toFixed(2)} / {p.imposto}%</td>
                   <td><span className={`badge ${p.tipo === 'comercializado' ? 'badge-blue' : 'badge-gray'}`}>
