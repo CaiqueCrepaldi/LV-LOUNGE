@@ -53,8 +53,18 @@ export default function Fornecedores() {
   const change = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
   const handleSubmit = () => {
-    if (!form.nome || !form.cnpj) {
-      setFormError('Nome e CNPJ são obrigatórios.');
+    const faltando: string[] = [];
+    if (!form.nome.trim()) faltando.push('Nome');
+    if (!form.cnpj.trim()) faltando.push('CNPJ');
+    if (!form.telefone.trim()) faltando.push('Telefone');
+    if (!form.logradouro.trim()) faltando.push('Logradouro');
+    if (!form.numero.trim()) faltando.push('Número');
+    if (!form.cep.trim()) faltando.push('CEP');
+    if (!form.cidade.trim()) faltando.push('Cidade');
+    if (!form.estado) faltando.push('Estado');
+    if (!form.produtoFornecido.trim()) faltando.push('Produto fornecido');
+    if (faltando.length > 0) {
+      setFormError(`Campos obrigatórios: ${faltando.join(', ')}.`);
       return;
     }
     setFormError('');
@@ -135,7 +145,7 @@ export default function Fornecedores() {
             />
           </div>
           <div className="form-group">
-            <div className="form-label">Telefone</div>
+            <div className="form-label">Telefone *</div>
             <input
               className="form-control"
               placeholder="(11) 99999-9999"
@@ -149,7 +159,7 @@ export default function Fornecedores() {
         {/* Linha 2: Logradouro, Número, CEP */}
         <div className="form-row form-row-3" style={{ marginBottom: 12 }}>
           <div className="form-group">
-            <div className="form-label">Logradouro</div>
+            <div className="form-label">Logradouro *</div>
             <input
               className="form-control"
               placeholder="Rua, Av., Travessa..."
@@ -158,7 +168,7 @@ export default function Fornecedores() {
             />
           </div>
           <div className="form-group">
-            <div className="form-label">Número</div>
+            <div className="form-label">Número *</div>
             <input
               className="form-control"
               placeholder="Ex: 100"
@@ -168,7 +178,7 @@ export default function Fornecedores() {
             />
           </div>
           <div className="form-group">
-            <div className="form-label">CEP</div>
+            <div className="form-label">CEP *</div>
             <input
               className="form-control"
               placeholder="00000-000"
@@ -182,7 +192,7 @@ export default function Fornecedores() {
         {/* Linha 3: Cidade, Estado, Produto fornecido */}
         <div className="form-row form-row-3" style={{ marginBottom: 12 }}>
           <div className="form-group">
-            <div className="form-label">Cidade</div>
+            <div className="form-label">Cidade *</div>
             <input
               className="form-control"
               placeholder="Ex: São Paulo"
@@ -191,14 +201,14 @@ export default function Fornecedores() {
             />
           </div>
           <div className="form-group">
-            <div className="form-label">Estado</div>
+            <div className="form-label">Estado *</div>
             <select className="form-control" value={form.estado} onChange={e => change('estado', e.target.value)}>
               <option value="">Selecione</option>
               {ESTADOS.map(uf => <option key={uf} value={uf}>{uf}</option>)}
             </select>
           </div>
           <div className="form-group">
-            <div className="form-label">Produto fornecido</div>
+            <div className="form-label">Produto fornecido *</div>
             <input
               className="form-control"
               placeholder="Ex: Ballena, Redbull"

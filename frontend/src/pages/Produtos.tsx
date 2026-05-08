@@ -39,8 +39,17 @@ export default function Produtos() {
   const change = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
   const handleSubmit = () => {
-    if (!form.nome || !form.codigo) {
-      setFormError('Nome e Código são obrigatórios.');
+    const faltando: string[] = [];
+    if (!form.nome.trim()) faltando.push('Nome');
+    if (!form.codigo.trim()) faltando.push('Código');
+    if (!form.marca.trim()) faltando.push('Marca');
+    if (form.estoqueInicial === '') faltando.push('Estoque inicial');
+    if (form.estoqueMinimo === '') faltando.push('Estoque mínimo');
+    if (form.preco === '') faltando.push('Preço');
+    if (form.imposto === '') faltando.push('Imposto');
+    if (!form.validade) faltando.push('Validade');
+    if (faltando.length > 0) {
+      setFormError(`Campos obrigatórios: ${faltando.join(', ')}.`);
       return;
     }
     setFormError('');
@@ -119,7 +128,7 @@ export default function Produtos() {
             </select>
           </div>
           <div className="form-group">
-            <div className="form-label">Marca</div>
+            <div className="form-label">Marca *</div>
             <input className="form-control" placeholder="Ex: Ballena" value={form.marca} onChange={e => change('marca', e.target.value)} />
           </div>
         </div>
@@ -129,11 +138,11 @@ export default function Produtos() {
             <input className="form-control" placeholder="Ex: Ballena 600ml" value={form.nome} onChange={e => change('nome', e.target.value)} />
           </div>
           <div className="form-group">
-            <div className="form-label">Estoque inicial</div>
+            <div className="form-label">Estoque inicial *</div>
             <input className="form-control" type="number" placeholder="0" value={form.estoqueInicial} onChange={e => change('estoqueInicial', e.target.value)} />
           </div>
           <div className="form-group">
-            <div className="form-label">Estoque mínimo</div>
+            <div className="form-label">Estoque mínimo *</div>
             <input className="form-control" type="number" placeholder="60" value={form.estoqueMinimo} onChange={e => change('estoqueMinimo', e.target.value)} />
           </div>
           <div className="form-group">
@@ -141,17 +150,17 @@ export default function Produtos() {
             <input className="form-control" placeholder="001" value={form.codigo} onChange={e => change('codigo', e.target.value)} />
           </div>
           <div className="form-group">
-            <div className="form-label">Preço (R$)</div>
+            <div className="form-label">Preço (R$) *</div>
             <input className="form-control" placeholder="0,00" value={form.preco} onChange={e => change('preco', e.target.value)} />
           </div>
           <div className="form-group">
-            <div className="form-label">Imposto (%)</div>
+            <div className="form-label">Imposto (%) *</div>
             <input className="form-control" placeholder="0" value={form.imposto} onChange={e => change('imposto', e.target.value)} />
           </div>
         </div>
         <div className="form-row form-row-2" style={{ marginBottom: 12 }}>
           <div className="form-group">
-            <div className="form-label">Validade</div>
+            <div className="form-label">Validade *</div>
             <input className="form-control" type="date" value={form.validade} onChange={e => change('validade', e.target.value)} />
           </div>
           <div className="form-group">

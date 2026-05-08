@@ -8,22 +8,22 @@ export const mockUsers: User[] = [
   {
     id: '1', usuario: 'bianca.gerente', nome: 'Bianca A.', telefone: '(00) 00000-0001',
     cpf: '000.000.000-00', email: 'gerente@demo.local', cargo: 'gerente', turno: 'tarde',
-    salario: 0, ativo: true,
+    salario: 0, senha: '12345678', ativo: true,
   },
   {
     id: '2', usuario: 'roberto', nome: 'Roberto S.', telefone: '(00) 00000-0002',
     cpf: '000.000.000-00', email: 'barman@demo.local', cargo: 'barman', turno: 'noite',
-    salario: 0, ativo: true,
+    salario: 0, senha: '12345678', ativo: true,
   },
   {
     id: '3', usuario: 'maria', nome: 'Maria S.', telefone: '(00) 00000-0003',
     cpf: '000.000.000-00', email: 'garcom@demo.local', cargo: 'garcom', turno: 'noite',
-    salario: 0, ativo: true,
+    salario: 0, senha: '12345678', ativo: true,
   },
   {
     id: '4', usuario: 'ana', nome: 'Ana O.', telefone: '(00) 00000-0004',
     cpf: '000.000.000-00', email: 'cozinheiro@demo.local', cargo: 'cozinheiro', turno: 'tarde',
-    salario: 0, ativo: true,
+    salario: 0, senha: '12345678', ativo: true,
   },
 ];
 

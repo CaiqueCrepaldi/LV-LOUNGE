@@ -62,8 +62,16 @@ export default function Funcionarios() {
   const change = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
   const handleSubmit = () => {
-    if (!form.nome || !form.usuario) {
-      setFormError('Nome e Usuário são obrigatórios.');
+    const faltando: string[] = [];
+    if (!form.nome.trim()) faltando.push('Nome completo');
+    if (!form.usuario.trim()) faltando.push('Usuário');
+    if (!form.telefone.trim()) faltando.push('Telefone');
+    if (!form.cpf.trim()) faltando.push('CPF');
+    if (!form.email.trim()) faltando.push('E-mail');
+    if (!form.salario.trim()) faltando.push('Salário');
+    if (!editandoId && !form.senha.trim()) faltando.push('Senha');
+    if (faltando.length > 0) {
+      setFormError(`Campos obrigatórios: ${faltando.join(', ')}.`);
       return;
     }
     setFormError('');
@@ -152,7 +160,7 @@ export default function Funcionarios() {
             />
           </div>
           <div className="form-group">
-            <div className="form-label">Telefone</div>
+            <div className="form-label">Telefone *</div>
             <input
               className="form-control"
               placeholder="(11) 99999-9999"
@@ -164,7 +172,7 @@ export default function Funcionarios() {
         </div>
         <div className="form-row form-row-3" style={{ marginBottom: 12 }}>
           <div className="form-group">
-            <div className="form-label">CPF</div>
+            <div className="form-label">CPF *</div>
             <input
               className="form-control"
               placeholder="000.000.000-00"
@@ -174,7 +182,7 @@ export default function Funcionarios() {
             />
           </div>
           <div className="form-group">
-            <div className="form-label">E-mail</div>
+            <div className="form-label">E-mail *</div>
             <input
               className="form-control"
               type="email"
@@ -203,7 +211,7 @@ export default function Funcionarios() {
         </div>
         <div className="form-row form-row-3">
           <div className="form-group">
-            <div className="form-label">Salário (R$)</div>
+            <div className="form-label">Salário (R$) *</div>
             <input
               className="form-control"
               placeholder="0,00"
@@ -214,7 +222,7 @@ export default function Funcionarios() {
             />
           </div>
           <div className="form-group">
-            <div className="form-label">Senha</div>
+            <div className="form-label">Senha *</div>
             <input
               className="form-control"
               type="password"

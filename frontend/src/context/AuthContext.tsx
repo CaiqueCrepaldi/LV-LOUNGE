@@ -11,15 +11,12 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// Senha compartilhada de demonstração — configurável via VITE_DEMO_PASSWORD no .env.local
-const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD as string | undefined ?? 'demo';
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
   const login = (usuario: string, senha: string): boolean => {
-    const found = mockUsers.find(u => u.usuario === usuario);
-    if (found && senha === DEMO_PASSWORD) { setUser(found); return true; }
+    const found = mockUsers.find(u => u.usuario === usuario && u.senha === senha);
+    if (found) { setUser(found); return true; }
     return false;
   };
 
