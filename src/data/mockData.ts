@@ -126,17 +126,17 @@ export const mockNotificacoes: Notificacao[] = [
   {
     id: '1', tipo: 'estoque', severidade: 'critico', titulo: 'Estoque crítico: Ballena',
     mensagem: 'Seu estoque de Ballena está próximo do mínimo (62/60 produtos). Solicite reposição imediatamente.',
-    data: '2024-11-13', horario: '21:30', lida: false,
+    data: '2024-11-13', horario: '21:30', lida: false, resolvido: false,
   },
   {
     id: '2', tipo: 'validade', severidade: 'aviso', titulo: 'Validade próxima: Peixe (Tilápia)',
     mensagem: 'Seu estoque de peixe está próximo de vencer (15/12/2024 — menos de 1 semana).',
-    data: '2024-11-13', horario: '09:00', lida: false,
+    data: '2024-11-13', horario: '09:00', lida: false, resolvido: false,
   },
   {
     id: '3', tipo: 'manutencao', severidade: 'info', titulo: 'Manutenção preventiva',
     mensagem: 'A manutenção dos seus equipamentos pode estar próxima (Data: Mês 12).',
-    data: '2024-11-12', horario: '15:00', lida: false,
+    data: '2024-11-12', horario: '15:00', lida: false, resolvido: false,
   },
 ];
 

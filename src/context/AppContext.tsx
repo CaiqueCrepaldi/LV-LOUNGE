@@ -48,7 +48,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [vendasDiarias, setVendasDiarias] = useState<DadoVendaDiaria[]>(mockVendasDiarias);
   const [vendasSemanais, setVendasSemanais] = useState<DadoVendaSemanal[]>(mockVendasSemanais);
 
-  const notificacoesNaoLidas = notificacoes.filter(n => !n.lida).length;
+  const notificacoesNaoLidas = notificacoes.filter(n => !n.resolvido).length;
 
   return (
     <AppContext.Provider value={{

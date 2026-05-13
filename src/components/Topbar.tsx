@@ -7,7 +7,7 @@ const pageTitles: Record<PageId, string> = {
   vendas: 'Caixa / Vendas',
   estoque: 'Estoque',
   geladeira: 'Geladeira da LV',
-  notificacoes: 'Notificações',
+  notificacoes: 'Alertas',
   produtos: 'Cadastro de Produtos',
   fornecedores: 'Fornecedores',
   funcionarios: 'Funcionários',
@@ -26,7 +26,7 @@ export default function Topbar() {
       </button>
       <button
         className="topbar-btn"
-        title="Notificações"
+        title="Alertas"
         onClick={() => setCurrentPage('notificacoes')}
       >
         <Bell size={16} />

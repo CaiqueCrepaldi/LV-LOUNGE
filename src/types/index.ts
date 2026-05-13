@@ -121,6 +121,7 @@ export interface Notificacao {
   data: string;
   horario: string;
   lida: boolean;
+  resolvido: boolean;
 }
 
 // ─── Relatório ────────────────────────────────────────────────────

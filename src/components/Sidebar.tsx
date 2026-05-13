@@ -26,7 +26,7 @@ const sections: { label: string; items: NavItem[] }[] = [
       { id: 'vendas', label: 'Caixa / Vendas', icon: <ShoppingCart /> },
       { id: 'estoque', label: 'Estoque', icon: <Package /> },
       { id: 'geladeira', label: 'Geladeira da LV', icon: <Snowflake /> },
-      { id: 'notificacoes', label: 'Notificações', icon: <Bell /> },
+      { id: 'notificacoes', label: 'Alertas', icon: <Bell /> },
     ],
   },
   {
