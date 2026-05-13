@@ -12,7 +12,7 @@ export interface User {
   cargo: UserRole;
   turno?: Turno;
   salario: number;
-  senha: string;
+  senha?: string;
   ativo: boolean;
 }
 
@@ -70,6 +70,7 @@ export interface ItemGeladeira {
 
 // ─── Vendas / Comanda ─────────────────────────────────────────────
 export type TipoImposto = 'iss_5' | 'icms_12' | 'isento';
+export type FormaPagamento = 'debito' | 'credito' | 'pix' | 'dinheiro';
 
 export interface ItemComanda {
   id: string;
@@ -91,6 +92,8 @@ export interface Venda {
   data: string;
   horario: string;
   status: 'aberta' | 'fechada' | 'cancelada';
+  formaPagamento?: FormaPagamento;
+  parcelas?: number;
 }
 
 // ─── Movimentação de Estoque ──────────────────────────────────────

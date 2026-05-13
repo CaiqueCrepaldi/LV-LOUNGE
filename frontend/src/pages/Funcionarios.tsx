@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import type { User, UserRole, Turno } from '../types';
+import { maskCPF, maskPhone, formatCurrency, parseCurrency, validateCPF, validateEmail, validatePhone } from '../utils/masks';
 
 const cargoLabels: Record<UserRole, string> = {
   gerente: 'Gerente', barman: 'Barman', garcom: 'Garçom', cozinheiro: 'Cozinheiro',
@@ -20,34 +21,12 @@ const turnoBadge: Record<Turno, string> = {
   tarde: 'badge-amber', noite: 'badge-blue', madrugada: 'badge-gray',
 };
 
-// ── Máscaras ──────────────────────────────────────────────────────
-const maskCPF = (v: string) => {
-  const d = v.replace(/\D/g, '').slice(0, 11);
-  if (d.length <= 3) return d;
-  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
-  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
-  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
-};
-
-const maskPhone = (v: string) => {
-  const d = v.replace(/\D/g, '').slice(0, 11);
-  if (d.length === 0) return '';
-  if (d.length <= 2) return `(${d}`;
-  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
-  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
-};
-
-const formatSalario = (v: string) => {
-  const num = parseFloat(v.replace(/\./g, '').replace(',', '.'));
-  if (!v || isNaN(num)) return '';
-  return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-};
-
-const parseSalario = (v: string) =>
-  parseFloat(v.replace(/\./g, '').replace(',', '.')) || 0;
-
 const initForm = { nome: '', usuario: '', telefone: '', cpf: '', email: '', cargo: 'barman' as UserRole, turno: 'noite' as Turno, salario: '', senha: '' };
+const initErrors = { telefone: '', cpf: '', email: '' };
+
+const fieldError = (msg: string) => (
+  <div style={{ fontSize: 11, color: 'var(--red, #e53e3e)', marginTop: 3 }}>{msg}</div>
+);
 
 export default function Funcionarios() {
   const { funcionarios, setFuncionarios } = useApp();
@@ -56,23 +35,52 @@ export default function Funcionarios() {
   const { confirm, modal } = useConfirm();
   const [form, setForm] = useState(initForm);
   const [formError, setFormError] = useState('');
+  const [errors, setErrors] = useState(initErrors);
   const [busca, setBusca] = useState('');
   const [editandoId, setEditandoId] = useState<string | null>(null);
 
-  const change = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
+  const change = (k: string, v: string) => {
+    setForm(p => ({ ...p, [k]: v }));
+    if (k in errors) setErrors(p => ({ ...p, [k]: '' }));
+  };
+
+  const blurValidate = (k: keyof typeof initErrors, v: string) => {
+    if (!v) return;
+    let msg = '';
+    if (k === 'cpf' && !validateCPF(v)) msg = 'CPF inválido.';
+    if (k === 'email' && !validateEmail(v)) msg = 'E-mail inválido.';
+    if (k === 'telefone' && !validatePhone(v)) msg = 'Telefone inválido (mínimo 10 dígitos).';
+    setErrors(p => ({ ...p, [k]: msg }));
+  };
 
   const handleSubmit = () => {
-    if (!form.nome || !form.usuario) {
-      setFormError('Nome e Usuário são obrigatórios.');
+    const faltando: string[] = [];
+    if (!form.nome.trim()) faltando.push('Nome completo');
+    if (!form.usuario.trim()) faltando.push('Usuário');
+    if (!form.telefone.trim()) faltando.push('Telefone');
+    if (!form.cpf.trim()) faltando.push('CPF');
+    if (!form.email.trim()) faltando.push('E-mail');
+    if (!form.salario.trim()) faltando.push('Salário');
+    if (!editandoId && !form.senha.trim()) faltando.push('Senha');
+    if (faltando.length > 0) {
+      setFormError(`Campos obrigatórios: ${faltando.join(', ')}.`);
+      return;
+    }
+    const invalidos: string[] = [];
+    if (!validatePhone(form.telefone)) invalidos.push('Telefone inválido');
+    if (!validateCPF(form.cpf)) invalidos.push('CPF inválido');
+    if (!validateEmail(form.email)) invalidos.push('E-mail inválido');
+    if (invalidos.length > 0) {
+      setFormError(invalidos.join(' · ') + '.');
       return;
     }
     setFormError('');
-    const salario = parseSalario(form.salario);
+    const salario = parseCurrency(form.salario);
     if (editandoId) {
       setFuncionarios(prev => prev.map(f => {
         if (f.id !== editandoId) return f;
         const updated = { ...f, ...form, salario };
-        if (!form.senha) updated.senha = f.senha;
+        if (!form.senha) updated.senha = f.senha ?? '';
         return updated;
       }));
       setEditandoId(null);
@@ -83,10 +91,12 @@ export default function Funcionarios() {
       toast('Funcionário cadastrado com sucesso.');
     }
     setForm(initForm);
+    setErrors(initErrors);
   };
 
   const handleEdit = (f: User) => {
     setFormError('');
+    setErrors(initErrors);
     setForm({
       nome: f.nome,
       usuario: f.usuario,
@@ -152,39 +162,45 @@ export default function Funcionarios() {
             />
           </div>
           <div className="form-group">
-            <div className="form-label">Telefone</div>
+            <div className="form-label">Telefone *</div>
             <input
-              className="form-control"
+              className={`form-control${errors.telefone ? ' input-invalid' : ''}`}
               placeholder="(11) 99999-9999"
               value={form.telefone}
               onChange={e => change('telefone', maskPhone(e.target.value))}
+              onBlur={e => blurValidate('telefone', e.target.value)}
               inputMode="numeric"
             />
+            {errors.telefone && fieldError(errors.telefone)}
           </div>
         </div>
         <div className="form-row form-row-3" style={{ marginBottom: 12 }}>
           <div className="form-group">
-            <div className="form-label">CPF</div>
+            <div className="form-label">CPF *</div>
             <input
-              className="form-control"
+              className={`form-control${errors.cpf ? ' input-invalid' : ''}`}
               placeholder="000.000.000-00"
               value={form.cpf}
               onChange={e => change('cpf', maskCPF(e.target.value))}
+              onBlur={e => blurValidate('cpf', e.target.value)}
               inputMode="numeric"
             />
+            {errors.cpf && fieldError(errors.cpf)}
           </div>
           <div className="form-group">
-            <div className="form-label">E-mail</div>
+            <div className="form-label">E-mail *</div>
             <input
-              className="form-control"
+              className={`form-control${errors.email ? ' input-invalid' : ''}`}
               type="email"
               placeholder="email@email.com"
               value={form.email}
               onChange={e => change('email', e.target.value)}
+              onBlur={e => blurValidate('email', e.target.value)}
             />
+            {errors.email && fieldError(errors.email)}
           </div>
           <div className="form-group">
-            <div className="form-label">Cargo / Nível de acesso</div>
+            <div className="form-label">Cargo / Nível de acesso *</div>
             <select className="form-control" value={form.cargo} onChange={e => change('cargo', e.target.value)}>
               <option value="barman">Barman</option>
               <option value="garcom">Garçom</option>
@@ -193,7 +209,7 @@ export default function Funcionarios() {
             </select>
           </div>
           <div className="form-group">
-            <div className="form-label">Turno</div>
+            <div className="form-label">Turno *</div>
             <select className="form-control" value={form.turno} onChange={e => change('turno', e.target.value)}>
               <option value="tarde">Tarde (12:00–18:00)</option>
               <option value="noite">Noite (18:00–00:00)</option>
@@ -203,18 +219,18 @@ export default function Funcionarios() {
         </div>
         <div className="form-row form-row-3">
           <div className="form-group">
-            <div className="form-label">Salário (R$)</div>
+            <div className="form-label">Salário (R$) *</div>
             <input
               className="form-control"
               placeholder="0,00"
               value={form.salario}
               onChange={e => change('salario', e.target.value.replace(/[^\d,]/g, ''))}
-              onBlur={e => change('salario', formatSalario(e.target.value))}
+              onBlur={e => change('salario', formatCurrency(e.target.value))}
               inputMode="decimal"
             />
           </div>
           <div className="form-group">
-            <div className="form-label">Senha</div>
+            <div className="form-label">Senha *</div>
             <input
               className="form-control"
               type="password"
@@ -229,7 +245,7 @@ export default function Funcionarios() {
                 <Plus size={14} /> {editandoId ? 'Salvar' : 'Criar funcionário'}
               </button>
               {editandoId && (
-                <button className="btn btn-ghost" onClick={() => { setEditandoId(null); setForm(initForm); setFormError(''); }}>Cancelar</button>
+                <button className="btn btn-ghost" onClick={() => { setEditandoId(null); setForm(initForm); setFormError(''); setErrors(initErrors); }}>Cancelar</button>
               )}
             </div>
           </div>

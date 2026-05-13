@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Plus, X, ShoppingCart, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Plus, X, ShoppingCart, CheckCircle, AlertTriangle, CreditCard, Banknote, Zap } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
-import type { ItemComanda, TipoImposto } from '../types';
+import type { ItemComanda, TipoImposto, FormaPagamento } from '../types';
+import { formatCurrency, parseCurrency } from '../utils/masks';
 
 let itemIdCounter = 100;
 
@@ -22,6 +23,31 @@ const categoriaEmoji: Record<string, string> = {
 const mapImpostoTipo = (imp: number): TipoImposto =>
   imp === 5 ? 'iss_5' : imp === 12 ? 'icms_12' : 'isento';
 
+const formaLabel: Record<FormaPagamento, string> = {
+  debito: 'Débito', credito: 'Crédito', pix: 'PIX', dinheiro: 'Dinheiro',
+};
+
+const maxParcelas = (total: number): number => {
+  if (total < 50) return 1;
+  if (total < 100) return 2;
+  if (total < 200) return 3;
+  if (total < 500) return 6;
+  return 12;
+};
+
+// Acréscimo (%) por número de parcelas no crédito
+const JUROS_PARCELA: Record<number, number> = {
+  1: 0, 2: 2, 3: 4, 4: 6, 5: 8, 6: 10,
+  7: 13, 8: 16, 9: 19, 10: 22, 11: 25, 12: 28,
+};
+
+const opcoesForma: { key: FormaPagamento; label: string; icon: React.ReactNode }[] = [
+  { key: 'debito',   label: 'Débito',   icon: <CreditCard size={18} /> },
+  { key: 'credito',  label: 'Crédito',  icon: <CreditCard size={18} /> },
+  { key: 'pix',      label: 'PIX',      icon: <Zap size={18} /> },
+  { key: 'dinheiro', label: 'Dinheiro', icon: <Banknote size={18} /> },
+];
+
 export default function Vendas() {
   const { setVendas, produtos } = useApp();
   const { user } = useAuth();
@@ -33,12 +59,14 @@ export default function Vendas() {
   const [imposto, setImposto] = useState<TipoImposto>('isento');
   const [comandaNum, setComanadaNum] = useState(novaComanda);
   const [mostrarResumo, setMostrarResumo] = useState(false);
+  const [formaPagamento, setFormaPagamento] = useState<FormaPagamento | null>(null);
+  const [parcelas, setParcelas] = useState(1);
 
   const produtosDisponiveis = produtos.filter(p => p.estoqueAtual > 0);
 
   const addItem = (nome?: string, precoVal?: number, produtoId?: string, impostoOverride?: TipoImposto) => {
     const desc = nome ?? descricao;
-    const val = precoVal ?? parseFloat(preco.replace(',', '.'));
+    const val = precoVal ?? parseCurrency(preco);
     const imp = impostoOverride ?? imposto;
     if (!desc || isNaN(val)) return;
     const subtotal = val * quantidade;
@@ -61,21 +89,31 @@ export default function Vendas() {
   const totalImpostos = itens.reduce((s, i) => s + i.precoUnitario * i.quantidade * TAX_RATE[i.imposto], 0);
   const totalComanda = subtotalSemImposto + totalImpostos;
 
+  const juros = formaPagamento === 'credito' && parcelas > 1 ? (JUROS_PARCELA[parcelas] ?? 0) : 0;
+  const acrescimo = totalComanda * juros / 100;
+  const totalFinal = totalComanda + acrescimo;
+
   const confirmarFechamento = () => {
+    if (!formaPagamento) return;
     setVendas(prev => [...prev, {
       id: String(Date.now()),
       comanda: comandaNum,
       funcionarioId: user?.id ?? '',
       funcionarioNome: user?.nome ?? '',
       itens,
-      total: totalComanda,
+      total: totalFinal,
       data: new Date().toISOString().slice(0, 10),
       horario: new Date().toTimeString().slice(0, 5),
       status: 'fechada',
+      formaPagamento,
+      parcelas: formaPagamento === 'credito' ? parcelas : 1,
     }]);
-    toast(`Comanda #${comandaNum} fechada — R$${totalComanda.toFixed(2)}`);
+    const parcelasInfo = formaPagamento === 'credito' && parcelas > 1 ? ` · ${parcelas}x (+${juros}%)` : '';
+    toast(`Comanda #${comandaNum} fechada — R$${totalFinal.toFixed(2)} · ${formaLabel[formaPagamento]}${parcelasInfo}`);
     setItens([]);
     setMostrarResumo(false);
+    setFormaPagamento(null);
+    setParcelas(1);
     setComanadaNum(novaComanda());
   };
 
@@ -138,7 +176,14 @@ export default function Vendas() {
                 </div>
                 <div className="form-group">
                   <div className="form-label">Preço unitário (R$)</div>
-                  <input className="form-control" placeholder="0,00" value={preco} onChange={e => setPreco(e.target.value)} />
+                  <input
+                    className="form-control"
+                    placeholder="0,00"
+                    value={preco}
+                    onChange={e => setPreco(e.target.value.replace(/[^\d,]/g, ''))}
+                    onBlur={e => setPreco(formatCurrency(e.target.value))}
+                    inputMode="decimal"
+                  />
                 </div>
               </div>
               <div className="form-row form-row-2" style={{ marginBottom: 12 }}>
@@ -255,10 +300,62 @@ export default function Vendas() {
                   <span>Impostos</span>
                   <span>R${totalImpostos.toFixed(2)}</span>
                 </div>
+                {juros > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--amber, #d97706)' }}>
+                    <span>Acréscimo ({juros}% — crédito {parcelas}x)</span>
+                    <span>+R${acrescimo.toFixed(2)}</span>
+                  </div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, color: 'var(--text)', marginTop: 6, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
                   <span>Total a cobrar</span>
-                  <span>R${totalComanda.toFixed(2)}</span>
+                  <span>R${totalFinal.toFixed(2)}</span>
                 </div>
+              </div>
+
+              {/* Forma de pagamento */}
+              <div style={{ marginBottom: 6 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>
+                  Forma de pagamento
+                </div>
+                <div className="pagamento-grid">
+                  {opcoesForma.map(op => (
+                    <button
+                      key={op.key}
+                      className={`pagamento-btn${formaPagamento === op.key ? ' selected' : ''}`}
+                      onClick={() => { setFormaPagamento(op.key); if (op.key !== 'credito') setParcelas(1); }}
+                    >
+                      {op.icon}
+                      {op.label}
+                    </button>
+                  ))}
+                </div>
+                {formaPagamento === 'credito' && (
+                  <div style={{ marginTop: 10 }}>
+                    <div className="form-label" style={{ marginBottom: 4 }}>Parcelamento</div>
+                    <select
+                      className="form-control"
+                      value={parcelas}
+                      onChange={e => setParcelas(Number(e.target.value))}
+                    >
+                      {Array.from({ length: maxParcelas(totalComanda) }, (_, i) => i + 1).map(n => {
+                        const pct = JUROS_PARCELA[n] ?? 0;
+                        const totalN = totalComanda * (1 + pct / 100);
+                        const valorParcela = totalN / n;
+                        const sufixo = pct === 0 ? ' — sem juros' : ` — +${pct}% (total R$${totalN.toFixed(2)})`;
+                        return (
+                          <option key={n} value={n}>
+                            {n}x de R${valorParcela.toFixed(2)}{sufixo}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                )}
+                {!formaPagamento && (
+                  <div style={{ fontSize: 11, color: 'var(--red, #e53e3e)', marginTop: 8 }}>
+                    Selecione a forma de pagamento para confirmar.
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -266,10 +363,10 @@ export default function Vendas() {
           <div className="form-actions" style={{ marginTop: 14 }}>
             {mostrarResumo ? (
               <>
-                <button className="btn btn-primary" onClick={confirmarFechamento}>
+                <button className="btn btn-primary" onClick={confirmarFechamento} disabled={!formaPagamento}>
                   <CheckCircle size={14} /> Confirmar fechamento
                 </button>
-                <button className="btn btn-ghost" onClick={() => setMostrarResumo(false)}>
+                <button className="btn btn-ghost" onClick={() => { setMostrarResumo(false); setFormaPagamento(null); setParcelas(1); }}>
                   Voltar
                 </button>
               </>

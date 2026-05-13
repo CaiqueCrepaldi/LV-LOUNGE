@@ -3,6 +3,7 @@ import { Plus, Edit2, Trash2, Search } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useConfirm } from '../components/ConfirmModal';
 import type { Produto, TipoProduto, CategoriaProduto, VidaUtil, StatusEstoque } from '../types';
+import { formatCurrency, parseCurrency, maskPercent, parsePercent, displayCurrency } from '../utils/masks';
 
 const statusBadge: Record<StatusEstoque, string> = {
   normal: 'badge-green', atencao: 'badge-amber', critico: 'badge-red',
@@ -20,6 +21,7 @@ const initForm = {
   imposto: '',
   validade: '',
   vidaUtil: 'nao_perecivel' as VidaUtil,
+  validadeIndeterminada: false,
 };
 
 const calcStatus = (atual: number, minimo: number): StatusEstoque => {
@@ -39,8 +41,17 @@ export default function Produtos() {
   const change = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
   const handleSubmit = () => {
-    if (!form.nome || !form.codigo) {
-      setFormError('Nome e Código são obrigatórios.');
+    const faltando: string[] = [];
+    if (!form.nome.trim()) faltando.push('Nome');
+    if (!form.codigo.trim()) faltando.push('Código');
+    if (!form.marca.trim()) faltando.push('Marca');
+    if (form.estoqueInicial === '') faltando.push('Estoque inicial');
+    if (form.estoqueMinimo === '') faltando.push('Estoque mínimo');
+    if (form.preco === '') faltando.push('Preço');
+    if (form.imposto === '') faltando.push('Imposto');
+    if (!form.validadeIndeterminada && !form.validade) faltando.push('Validade');
+    if (faltando.length > 0) {
+      setFormError(`Campos obrigatórios: ${faltando.join(', ')}.`);
       return;
     }
     setFormError('');
@@ -50,7 +61,8 @@ export default function Produtos() {
       setProdutos(prev => prev.map(p => p.id === editandoId ? {
         ...p, ...form,
         estoqueAtual, estoqueInicial: estoqueAtual, estoqueMinimo,
-        preco: Number(form.preco), imposto: Number(form.imposto),
+        preco: parseCurrency(form.preco), imposto: parsePercent(form.imposto),
+        validade: form.validadeIndeterminada ? '' : form.validade,
         status: calcStatus(estoqueAtual, estoqueMinimo),
       } : p));
       setEditandoId(null);
@@ -60,8 +72,9 @@ export default function Produtos() {
         codigo: form.codigo, nome: form.nome, tipo: form.tipo,
         categoria: form.categoria, marca: form.marca,
         estoqueAtual, estoqueInicial: estoqueAtual, estoqueMinimo,
-        preco: Number(form.preco), imposto: Number(form.imposto),
-        validade: form.validade, vidaUtil: form.vidaUtil,
+        preco: parseCurrency(form.preco), imposto: parsePercent(form.imposto),
+        validade: form.validadeIndeterminada ? '' : form.validade,
+        vidaUtil: form.vidaUtil,
         status: calcStatus(estoqueAtual, estoqueMinimo),
       };
       setProdutos(prev => [...prev, novo]);
@@ -74,8 +87,11 @@ export default function Produtos() {
     setForm({
       tipo: p.tipo, categoria: p.categoria, marca: p.marca, nome: p.nome,
       estoqueInicial: String(p.estoqueAtual), estoqueMinimo: String(p.estoqueMinimo),
-      codigo: p.codigo, preco: String(p.preco), imposto: String(p.imposto),
+      codigo: p.codigo,
+      preco: isNaN(p.preco) ? '' : p.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      imposto: String(isNaN(p.imposto) ? '' : p.imposto),
       validade: p.validade, vidaUtil: p.vidaUtil,
+      validadeIndeterminada: !p.validade,
     });
     setEditandoId(p.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -104,14 +120,14 @@ export default function Produtos() {
         <div className="card-title">{editandoId ? 'Editar produto' : 'Novo produto'}</div>
         <div className="form-row form-row-3" style={{ marginBottom: 12 }}>
           <div className="form-group">
-            <div className="form-label">Tipo de produto</div>
+            <div className="form-label">Tipo de produto *</div>
             <select className="form-control" value={form.tipo} onChange={e => change('tipo', e.target.value)}>
               <option value="comercializado">Comercializado</option>
               <option value="ingrediente">Ingrediente</option>
             </select>
           </div>
           <div className="form-group">
-            <div className="form-label">Categoria</div>
+            <div className="form-label">Categoria *</div>
             <select className="form-control" value={form.categoria} onChange={e => change('categoria', e.target.value)}>
               <option value="bebida">Bebida</option>
               <option value="alimento">Alimento</option>
@@ -119,7 +135,7 @@ export default function Produtos() {
             </select>
           </div>
           <div className="form-group">
-            <div className="form-label">Marca</div>
+            <div className="form-label">Marca *</div>
             <input className="form-control" placeholder="Ex: Ballena" value={form.marca} onChange={e => change('marca', e.target.value)} />
           </div>
         </div>
@@ -129,11 +145,11 @@ export default function Produtos() {
             <input className="form-control" placeholder="Ex: Ballena 600ml" value={form.nome} onChange={e => change('nome', e.target.value)} />
           </div>
           <div className="form-group">
-            <div className="form-label">Estoque inicial</div>
+            <div className="form-label">Estoque inicial *</div>
             <input className="form-control" type="number" placeholder="0" value={form.estoqueInicial} onChange={e => change('estoqueInicial', e.target.value)} />
           </div>
           <div className="form-group">
-            <div className="form-label">Estoque mínimo</div>
+            <div className="form-label">Estoque mínimo *</div>
             <input className="form-control" type="number" placeholder="60" value={form.estoqueMinimo} onChange={e => change('estoqueMinimo', e.target.value)} />
           </div>
           <div className="form-group">
@@ -141,21 +157,51 @@ export default function Produtos() {
             <input className="form-control" placeholder="001" value={form.codigo} onChange={e => change('codigo', e.target.value)} />
           </div>
           <div className="form-group">
-            <div className="form-label">Preço (R$)</div>
-            <input className="form-control" placeholder="0,00" value={form.preco} onChange={e => change('preco', e.target.value)} />
+            <div className="form-label">Preço (R$) *</div>
+            <input
+              className="form-control"
+              placeholder="0,00"
+              value={form.preco}
+              onChange={e => change('preco', e.target.value.replace(/[^\d,]/g, ''))}
+              onBlur={e => change('preco', formatCurrency(e.target.value))}
+              inputMode="decimal"
+            />
           </div>
           <div className="form-group">
-            <div className="form-label">Imposto (%)</div>
-            <input className="form-control" placeholder="0" value={form.imposto} onChange={e => change('imposto', e.target.value)} />
+            <div className="form-label">Imposto (%) *</div>
+            <input
+              className="form-control"
+              placeholder="0"
+              value={form.imposto}
+              onChange={e => change('imposto', maskPercent(e.target.value))}
+              inputMode="decimal"
+            />
           </div>
         </div>
         <div className="form-row form-row-2" style={{ marginBottom: 12 }}>
           <div className="form-group">
-            <div className="form-label">Validade</div>
-            <input className="form-control" type="date" value={form.validade} onChange={e => change('validade', e.target.value)} />
+            <div className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span>Validade {!form.validadeIndeterminada && '*'}</span>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontWeight: 400, fontSize: 11, cursor: 'pointer', color: 'var(--text-muted)' }}>
+                <input
+                  type="checkbox"
+                  checked={form.validadeIndeterminada}
+                  onChange={e => setForm(p => ({ ...p, validadeIndeterminada: e.target.checked, validade: e.target.checked ? '' : p.validade }))}
+                />
+                Validade indeterminada
+              </label>
+            </div>
+            <input
+              className="form-control"
+              type="date"
+              value={form.validade}
+              onChange={e => change('validade', e.target.value)}
+              disabled={form.validadeIndeterminada}
+              style={form.validadeIndeterminada ? { opacity: 0.4, pointerEvents: 'none' } : {}}
+            />
           </div>
           <div className="form-group">
-            <div className="form-label">Vida útil (tipo de alerta)</div>
+            <div className="form-label">Vida útil (tipo de alerta) *</div>
             <select className="form-control" value={form.vidaUtil} onChange={e => change('vidaUtil', e.target.value)}>
               <option value="perecivel">Perecível (alerta 1 semana antes)</option>
               <option value="nao_perecivel">Não perecível (alerta 1 mês antes)</option>
@@ -198,9 +244,9 @@ export default function Produtos() {
                   <td style={{ fontWeight: 500 }}>{p.nome}</td>
                   <td>{p.estoqueAtual} / {p.estoqueMinimo}</td>
                   <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                    {p.validade ? new Date(p.validade).toLocaleDateString('pt-BR') : '—'}
+                    {p.validade ? new Date(p.validade + 'T12:00:00').toLocaleDateString('pt-BR') : 'Indeterminada'}
                   </td>
-                  <td>R${p.preco.toFixed(2)} / {p.imposto}%</td>
+                  <td>R${displayCurrency(p.preco)} / {isNaN(p.imposto) ? 0 : p.imposto}%</td>
                   <td><span className={`badge ${p.tipo === 'comercializado' ? 'badge-blue' : 'badge-gray'}`}>
                     {p.tipo === 'comercializado' ? 'Comercializado' : 'Ingrediente'}
                   </span></td>

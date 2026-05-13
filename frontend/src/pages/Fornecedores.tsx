@@ -4,31 +4,7 @@ import { useApp } from '../context/AppContext';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
 import type { Fornecedor } from '../types';
-
-// ── Máscaras ──────────────────────────────────────────────────────
-const maskCNPJ = (v: string) => {
-  const d = v.replace(/\D/g, '').slice(0, 14);
-  if (d.length <= 2) return d;
-  if (d.length <= 5) return `${d.slice(0, 2)}.${d.slice(2)}`;
-  if (d.length <= 8) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5)}`;
-  if (d.length <= 12) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8)}`;
-  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
-};
-
-const maskPhone = (v: string) => {
-  const d = v.replace(/\D/g, '').slice(0, 11);
-  if (d.length === 0) return '';
-  if (d.length <= 2) return `(${d}`;
-  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
-  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
-};
-
-const maskCEP = (v: string) => {
-  const d = v.replace(/\D/g, '').slice(0, 8);
-  if (d.length <= 5) return d;
-  return `${d.slice(0, 5)}-${d.slice(5)}`;
-};
+import { maskCNPJ, maskPhone, maskCEP, validateCNPJ, validatePhone, validateCEP } from '../utils/masks';
 
 const ESTADOS = [
   'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG',
@@ -41,20 +17,58 @@ const initForm = {
   historicoTransacao: '', produtoFornecido: '',
 };
 
+const initErrors = { cnpj: '', telefone: '', cep: '' };
+
+const fieldError = (msg: string) => (
+  <div style={{ fontSize: 11, color: 'var(--red, #e53e3e)', marginTop: 3 }}>{msg}</div>
+);
+
 export default function Fornecedores() {
   const { fornecedores, setFornecedores } = useApp();
   const toast = useToast();
   const { confirm, modal } = useConfirm();
   const [form, setForm] = useState(initForm);
   const [formError, setFormError] = useState('');
+  const [errors, setErrors] = useState(initErrors);
   const [busca, setBusca] = useState('');
   const [editandoId, setEditandoId] = useState<string | null>(null);
 
-  const change = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
+  const change = (k: string, v: string) => {
+    setForm(p => ({ ...p, [k]: v }));
+    if (k in errors) setErrors(p => ({ ...p, [k]: '' }));
+  };
+
+  const blurValidate = (k: keyof typeof initErrors, v: string) => {
+    if (!v) return;
+    let msg = '';
+    if (k === 'cnpj' && !validateCNPJ(v)) msg = 'CNPJ inválido.';
+    if (k === 'telefone' && !validatePhone(v)) msg = 'Telefone inválido (mínimo 10 dígitos).';
+    if (k === 'cep' && !validateCEP(v)) msg = 'CEP inválido (deve ter 8 dígitos).';
+    setErrors(p => ({ ...p, [k]: msg }));
+  };
 
   const handleSubmit = () => {
-    if (!form.nome || !form.cnpj) {
-      setFormError('Nome e CNPJ são obrigatórios.');
+    const faltando: string[] = [];
+    if (!form.nome.trim()) faltando.push('Nome');
+    if (!form.cnpj.trim()) faltando.push('CNPJ');
+    if (!form.telefone.trim()) faltando.push('Telefone');
+    if (!form.logradouro.trim()) faltando.push('Logradouro');
+    if (!form.numero.trim()) faltando.push('Número');
+    if (!form.cep.trim()) faltando.push('CEP');
+    if (!form.cidade.trim()) faltando.push('Cidade');
+    if (!form.estado) faltando.push('Estado');
+    if (!form.produtoFornecido.trim()) faltando.push('Produto fornecido');
+    if (!form.historicoTransacao.trim()) faltando.push('Histórico de transação');
+    if (faltando.length > 0) {
+      setFormError(`Campos obrigatórios: ${faltando.join(', ')}.`);
+      return;
+    }
+    const invalidos: string[] = [];
+    if (!validateCNPJ(form.cnpj)) invalidos.push('CNPJ inválido');
+    if (!validatePhone(form.telefone)) invalidos.push('Telefone inválido');
+    if (!validateCEP(form.cep)) invalidos.push('CEP inválido');
+    if (invalidos.length > 0) {
+      setFormError(invalidos.join(' · ') + '.');
       return;
     }
     setFormError('');
@@ -68,10 +82,12 @@ export default function Fornecedores() {
       toast('Fornecedor cadastrado com sucesso.');
     }
     setForm(initForm);
+    setErrors(initErrors);
   };
 
   const handleEdit = (f: Fornecedor) => {
     setFormError('');
+    setErrors(initErrors);
     setForm({
       nome: f.nome, cnpj: f.cnpj, telefone: f.telefone,
       logradouro: f.logradouro, numero: f.numero, cep: f.cep,
@@ -127,29 +143,33 @@ export default function Fornecedores() {
           <div className="form-group">
             <div className="form-label">CNPJ *</div>
             <input
-              className="form-control"
+              className={`form-control${errors.cnpj ? ' input-invalid' : ''}`}
               placeholder="00.000.000/0001-00"
               value={form.cnpj}
               onChange={e => change('cnpj', maskCNPJ(e.target.value))}
+              onBlur={e => blurValidate('cnpj', e.target.value)}
               inputMode="numeric"
             />
+            {errors.cnpj && fieldError(errors.cnpj)}
           </div>
           <div className="form-group">
-            <div className="form-label">Telefone</div>
+            <div className="form-label">Telefone *</div>
             <input
-              className="form-control"
+              className={`form-control${errors.telefone ? ' input-invalid' : ''}`}
               placeholder="(11) 99999-9999"
               value={form.telefone}
               onChange={e => change('telefone', maskPhone(e.target.value))}
+              onBlur={e => blurValidate('telefone', e.target.value)}
               inputMode="numeric"
             />
+            {errors.telefone && fieldError(errors.telefone)}
           </div>
         </div>
 
         {/* Linha 2: Logradouro, Número, CEP */}
         <div className="form-row form-row-3" style={{ marginBottom: 12 }}>
           <div className="form-group">
-            <div className="form-label">Logradouro</div>
+            <div className="form-label">Logradouro *</div>
             <input
               className="form-control"
               placeholder="Rua, Av., Travessa..."
@@ -158,7 +178,7 @@ export default function Fornecedores() {
             />
           </div>
           <div className="form-group">
-            <div className="form-label">Número</div>
+            <div className="form-label">Número *</div>
             <input
               className="form-control"
               placeholder="Ex: 100"
@@ -168,21 +188,23 @@ export default function Fornecedores() {
             />
           </div>
           <div className="form-group">
-            <div className="form-label">CEP</div>
+            <div className="form-label">CEP *</div>
             <input
-              className="form-control"
+              className={`form-control${errors.cep ? ' input-invalid' : ''}`}
               placeholder="00000-000"
               value={form.cep}
               onChange={e => change('cep', maskCEP(e.target.value))}
+              onBlur={e => blurValidate('cep', e.target.value)}
               inputMode="numeric"
             />
+            {errors.cep && fieldError(errors.cep)}
           </div>
         </div>
 
         {/* Linha 3: Cidade, Estado, Produto fornecido */}
         <div className="form-row form-row-3" style={{ marginBottom: 12 }}>
           <div className="form-group">
-            <div className="form-label">Cidade</div>
+            <div className="form-label">Cidade *</div>
             <input
               className="form-control"
               placeholder="Ex: São Paulo"
@@ -191,14 +213,14 @@ export default function Fornecedores() {
             />
           </div>
           <div className="form-group">
-            <div className="form-label">Estado</div>
+            <div className="form-label">Estado *</div>
             <select className="form-control" value={form.estado} onChange={e => change('estado', e.target.value)}>
               <option value="">Selecione</option>
               {ESTADOS.map(uf => <option key={uf} value={uf}>{uf}</option>)}
             </select>
           </div>
           <div className="form-group">
-            <div className="form-label">Produto fornecido</div>
+            <div className="form-label">Produto fornecido *</div>
             <input
               className="form-control"
               placeholder="Ex: Ballena, Redbull"
@@ -211,7 +233,7 @@ export default function Fornecedores() {
         {/* Linha 4: Histórico + botões */}
         <div className="form-row form-row-3">
           <div className="form-group" style={{ gridColumn: '1 / span 2' }}>
-            <div className="form-label">Histórico de transação</div>
+            <div className="form-label">Histórico de transação *</div>
             <input
               className="form-control"
               placeholder="Ex: Ativo desde 2023"
@@ -225,7 +247,7 @@ export default function Fornecedores() {
                 <Plus size={14} /> {editandoId ? 'Salvar' : 'Cadastrar fornecedor'}
               </button>
               {editandoId && (
-                <button className="btn btn-ghost" onClick={() => { setEditandoId(null); setForm(initForm); setFormError(''); }}>
+                <button className="btn btn-ghost" onClick={() => { setEditandoId(null); setForm(initForm); setFormError(''); setErrors(initErrors); }}>
                   Cancelar
                 </button>
               )}

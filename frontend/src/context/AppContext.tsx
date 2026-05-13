@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import type {
   Produto, Fornecedor, ItemGeladeira, Venda,
   User, Movimentacao, Notificacao, PageId,
@@ -6,9 +6,24 @@ import type {
 } from '../types';
 import {
   mockProdutos, mockFornecedores, mockGeladeira,
-  mockVendas, mockUsers, mockMovimentacoes, mockNotificacoes,
+  mockUsers, mockMovimentacoes, mockNotificacoes,
   mockVendasDiarias, mockVendasSemanais,
 } from '../data/mockData';
+
+function getTodayDate(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+function loadVendasDoDia(): Venda[] {
+  try {
+    const raw = localStorage.getItem('lv_vendas');
+    if (!raw) return [];
+    const { date, vendas } = JSON.parse(raw) as { date: string; vendas: Venda[] };
+    return date === getTodayDate() ? vendas : [];
+  } catch {
+    return [];
+  }
+}
 
 interface AppContextType {
   currentPage: PageId;
@@ -41,12 +56,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [produtos, setProdutos] = useState<Produto[]>(mockProdutos);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>(mockFornecedores);
   const [geladeira, setGeladeira] = useState<ItemGeladeira[]>(mockGeladeira);
-  const [vendas, setVendas] = useState<Venda[]>(mockVendas);
+  const [vendas, setVendas] = useState<Venda[]>(loadVendasDoDia);
   const [funcionarios, setFuncionarios] = useState<User[]>(mockUsers);
   const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>(mockMovimentacoes);
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>(mockNotificacoes);
   const [vendasDiarias, setVendasDiarias] = useState<DadoVendaDiaria[]>(mockVendasDiarias);
   const [vendasSemanais, setVendasSemanais] = useState<DadoVendaSemanal[]>(mockVendasSemanais);
+
+  useEffect(() => {
+    localStorage.setItem('lv_vendas', JSON.stringify({ date: getTodayDate(), vendas }));
+  }, [vendas]);
 
   const notificacoesNaoLidas = notificacoes.filter(n => !n.resolvido).length;
 
